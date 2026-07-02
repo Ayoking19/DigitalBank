@@ -1,8 +1,12 @@
-# Ignore all compiled Java classes
+# Ignore compiled Java classes
 *.class
 
-# Ignore the SQLite database file
+# Ignore database files
 *.db
 
-# Ignore all VS Code workspace configurations
+# Ignore heavy Java binaries
+*.jar
+
+# Ignore IDE settings
+settings.json
 .vscode/
