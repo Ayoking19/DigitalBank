@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigitalBank | Financial Analytics</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body style="background-color: #121212; color: white; font-family: Arial, sans-serif; padding-top: 30px; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh;">
+
+    <nav class="top-nav" style="max-width: 800px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-gold);">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="12 22 12 8"></polyline>
+                <polyline points="9 11 12 8 15 11"></polyline>
+            </svg>
+            <div class="nav-logo" style="font-size: 1.3rem;">DigitalBank</div>
+        </div>
+        <div class="nav-logout" style="cursor: pointer; font-size: 0.9rem;" onclick="window.location.assign('./home.html')">← Back to Vault</div>
+    </nav>
+
+    <div class="glass-panel" style="max-width: 800px; width: 95%; padding: 30px 20px;">
+        <h2 style="margin-top: 0; margin-bottom: 25px;">Cash Flow Analysis</h2>
+
+        <div style="display: flex; gap: 15px; margin-bottom: 30px;">
+            <div style="flex: 1; background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 12px; padding: 20px; text-align: center;">
+                <p style="color: #94A3B8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;">Total Inflow</p>
+                <h3 id="inflowDisplay" style="color: #00ff88; margin: 0; font-size: 1.8rem; font-family: 'Inter', monospace;">$0.00</h3>
+            </div>
+            <div style="flex: 1; background: rgba(255, 77, 79, 0.05); border: 1px solid rgba(255, 77, 79, 0.3); border-radius: 12px; padding: 20px; text-align: center;">
+                <p style="color: #94A3B8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;">Total Outflow</p>
+                <h3 id="outflowDisplay" style="color: #FF4D4F; margin: 0; font-size: 1.8rem; font-family: 'Inter', monospace;">$0.00</h3>
+            </div>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-micro); border-radius: 12px; padding: 20px; display: flex; justify-content: center;">
+            <div style="position: relative; width: 100%; max-width: 400px; aspect-ratio: 1/1;">
+                <canvas id="cashFlowChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let userId = localStorage.getItem("digitalBankId");
+        let myAccountNumber = "";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!userId) window.location.assign("./index.html");
+
+            // 1. Authenticate and retrieve the user's account number
+            fetch("http://206.189.113.64:8080/api/user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ googleId: userId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                myAccountNumber = data.accountNumber;
+                // 2. Trigger the mathematical aggregation engine
+                processAnalytics(userId, data.accountNumber);
+            })
+            .catch(err => console.error("Could not fetch user data."));
+        });
+
+        function processAnalytics(googleId, accNum) {
+            fetch("http://206.189.113.64:8080/api/transactions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ googleId: googleId })
+            })
+            .then(response => response.json())
+            .then(transactions => {
+                let totalIn = 0;
+                let totalOut = 0;
+
+                // Data Aggregation Loop: Sorting every penny
+                transactions.forEach(tx => {
+                    // THE FIX: The Analytics engine now strictly uses the raw Account Numbers (senderAcc/receiverAcc) for flawless mathematical matching, ignoring the real names!
+                    if (tx.receiverAcc === accNum) {
+                        totalIn += tx.amount;
+                    } else if (tx.senderAcc === accNum) {
+                        totalOut += tx.amount;
+                    }
+                });
+
+                // Formatting the summary text
+                let formatMoney = (amount) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+                document.getElementById("inflowDisplay").innerText = formatMoney(totalIn);
+                document.getElementById("outflowDisplay").innerText = formatMoney(totalOut);
+
+                // Rendering the Chart
+                drawChart(totalIn, totalOut);
+            })
+            .catch(error => console.error("Analytics failure:", error));
+        }
+
+        function drawChart(inflow, outflow) {
+            const ctx = document.getElementById('cashFlowChart').getContext('2d');
+            
+            // Adjusting global Chart.js settings for a premium dark-mode look
+            Chart.defaults.color = '#94A3B8';
+            Chart.defaults.font.family = 'Arial, sans-serif';
+
+            new Chart(ctx, {
+                type: 'doughnut', // A circular chart with a hollow center
+                data: {
+                    labels: ['Total Inflow', 'Total Outflow'],
+                    datasets: [{
+                        data: [inflow, outflow],
+                        backgroundColor: [
+                            'rgba(0, 255, 136, 0.8)', // Neon Green
+                            'rgba(255, 77, 79, 0.8)'  // Neon Red
+                        ],
+                        borderColor: [
+                            'rgba(0, 255, 136, 1)',
+                            'rgba(255, 77, 79, 1)'
+                        ],
+                        borderWidth: 2,
+                        hoverOffset: 10 // Pushes the slice out when hovered
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%', // Makes the ring thinner for a modern aesthetic
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: { size: 14 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 15,
+                            callbacks: {
+                                label: function(context) {
+                                    // Formatting the hover tooltip as actual currency
+                                    let value = context.raw;
+                                    return ' ' + new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

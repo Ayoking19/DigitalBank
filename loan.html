@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigitalBank | Credit Facility</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body style="background-color: #121212; color: white; font-family: Arial, sans-serif; padding-top: 30px;">
+
+    <nav class="top-nav">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-gold);">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="12 22 12 8"></polyline>
+                <polyline points="9 11 12 8 15 11"></polyline>
+            </svg>
+            <div class="nav-logo">DigitalBank</div>
+        </div>
+        <!-- THE FIX: Triggering the Modal -->
+        <div class="nav-logout" onclick="document.getElementById('logoutModal').style.display='flex'">Secure Logout</div>
+    </nav>
+
+    <div class="dashboard-wrapper" style="grid-template-columns: 1fr; max-width: 800px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid var(--border-micro); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <div>
+                <p style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 5px 0;">Trust Rating</p>
+                <h3 style="margin: 0; color: white; font-family: 'Playfair Display', serif;">Institutional Credit Score</h3>
+            </div>
+            <div style="text-align: right;">
+                <h1 id="creditScoreDisplay" style="margin: 0; font-family: 'Inter', monospace; color: var(--accent-gold); font-size: 2.5rem;">---</h1>
+            </div>
+        </div>
+
+        <div class="loan-limit-card" id="noLoanState">
+            <h2 style="margin-top: 0; color: white;">Institutional Credit Line</h2>
+            <p style="margin-bottom: 25px;">Leverage your transaction history to access immediate liquidity.</p>
+            
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-micro); border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                <p style="text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem; margin: 0 0 10px 0;">Available Credit Limit</p>
+                <h1 id="loanLimitDisplay" style="margin: 0; font-family: 'Inter', monospace; color: #00ff88; text-shadow: 0 0 20px rgba(0,255,136,0.2);">Loading...</h1>
+            </div>
+            
+            <button class="glass-btn" style="max-width: 300px;" onclick="openLoanWizard()">Request Capital ↗</button>
+        </div>
+
+        <div class="black-card" id="activeLoanState" style="display: none; border-color: #FF4D4F;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
+                <div>
+                    <p style="color: #FF4D4F; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 5px 0;">Active Liability Owed</p>
+                    <h1 id="owedDisplay" style="margin: 0; font-size: 2.5rem; font-family: 'Inter', monospace; color: white;">$0.00</h1>
+                </div>
+                <div style="text-align: right;">
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0 0 5px 0;">Next Payment Due</p>
+                    <h3 id="dueDateDisplay" style="margin: 0; color: var(--text-primary);">--</h3>
+                    <p style="color: var(--accent-gold); font-size: 0.85rem; margin: 5px 0 0 0;">Due Now: <span id="dueAmountDisplay">$0.00</span></p>
+                </div>
+            </div>
+            
+            <button class="glass-btn" style="background: #FF4D4F; color: white; box-shadow: 0 4px 15px rgba(255, 77, 79, 0.3);" onclick="document.getElementById('payLoanModal').style.display='flex'">Initiate Repayment</button>
+        </div>
+
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+                <h2 class="dashboard-section-title" style="margin-bottom: 0;">Credit History</h2>
+                <span class="view-all" style="font-size: 0.85rem; color: var(--accent-gold); cursor: pointer; transition: color var(--motion-snappy);" onclick="window.location.assign('./history.html?filter=credit')">View All</span>
+            </div>
+            
+            <div class="tx-list" id="loanHistoryLedger">
+                <div class="tx-row" style="justify-content: center; color: #64748B;">No previous credit lines found.</div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="payLoanModal" class="modal-overlay" style="display: none; z-index: 1000;">
+        <div class="glass-panel" style="width: 350px;">
+            <h2 style="color: #FF4D4F; margin-top: 0;">Repay Liability</h2>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">Enter the amount you wish to securely repay towards your active credit line.</p>
+            <input type="number" id="repayAmount" class="glass-input" placeholder="Amount (USD)" style="margin-bottom: 15px;">
+            <input type="password" id="repayPin" class="glass-input" maxlength="4" placeholder="4-Digit PIN" style="margin-bottom: 15px; text-align: center; letter-spacing: 10px;">
+            <div id="repayError" class="error-text" style="display:none; text-align: center;"></div>
+            <!-- THE FIX: Flex-wrap container prevents squishing -->
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+                <button class="glass-btn" style="background: #FF4D4F; color: white; width: auto; flex: 1; min-width: 150px;" onclick="executeRepayment()">Confirm Repayment</button>
+                <button class="glass-btn secondary" style="width: auto; flex: 1; min-width: 150px;" onclick="document.getElementById('payLoanModal').style.display = 'none'">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loanWizardModal" class="modal-overlay">
+        <div class="glass-panel" style="width: 450px;">
+            
+            <div id="phase1" class="wizard-step active">
+                <h2 style="color: var(--accent-gold);">Define Capital</h2>
+                <p>Enter your requested loan amount. Maximum limit: <span id="wizardLimitText" style="color: #00ff88; font-weight: bold;"></span></p>
+                <input type="number" id="requestAmount" class="glass-input" style="font-size: 2rem; padding: 20px; margin-top: 15px;" placeholder="0.00">
+                <div id="amountErr" class="error-text" style="margin-top: 10px;"></div>
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="document.getElementById('loanWizardModal').style.display='none'">Cancel</button>
+                    <button class="glass-btn" onclick="validateLoanAmount()">Next Step ↗</button>
+                </div>
+            </div>
+
+            <div id="phase2" class="wizard-step">
+                <h2 style="color: var(--accent-gold);">Select Term</h2>
+                <p style="margin-bottom: 20px;">Select your timeline. Longer terms incur higher institutional interest rates.</p>
+                
+                <div class="loan-option-grid">
+                    <div class="loan-option" onclick="selectTerm(30, 5, this)">
+                        <h3 style="margin: 0 0 5px 0; color: white;">30 Days</h3>
+                        <small style="color: #00ff88;">5% Interest</small>
+                    </div>
+                    <div class="loan-option" onclick="selectTerm(60, 8, this)">
+                        <h3 style="margin: 0 0 5px 0; color: white;">60 Days</h3>
+                        <small style="color: #00ff88;">8% Interest</small>
+                    </div>
+                    <div class="loan-option" onclick="selectTerm(90, 12, this)">
+                        <h3 style="margin: 0 0 5px 0; color: white;">90 Days</h3>
+                        <small style="color: #00ff88;">12% Interest</small>
+                    </div>
+                    <div class="loan-option" onclick="selectTerm(180, 18, this)">
+                        <h3 style="margin: 0 0 5px 0; color: white;">180 Days</h3>
+                        <small style="color: #00ff88;">18% Interest</small>
+                    </div>
+                </div>
+                
+                <div id="termErr" class="error-text">Please select a term.</div>
+                
+                <div id="installmentContainer" style="display: none; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);">
+                    <p style="font-size: 0.85rem; margin-top: 0; color: var(--text-secondary);">Repayment Structure</p>
+                    <select id="repaymentType" class="glass-input" onchange="calculateBreakdown()">
+                        <option value="once">Pay Full Amount at End of Term</option>
+                        <option value="installments">Pay in Monthly Installments</option>
+                    </select>
+                </div>
+
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="goToPhase(1)">Back</button>
+                    <button class="glass-btn" onclick="goToPhase(3)">Review Contract ↗</button>
+                </div>
+            </div>
+
+            <div id="phase3" class="wizard-step">
+                <h2 style="color: var(--accent-gold);">Contract Review</h2>
+                
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-micro); border-radius: 8px; padding: 20px; text-align: left; margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="color: var(--text-secondary);">Principal:</span>
+                        <span id="revPrincipal" style="color: white; font-family: monospace;"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span style="color: var(--text-secondary);">Interest (<span id="revRate"></span>%):</span>
+                        <span id="revInterest" style="color: #FF4D4F; font-family: monospace;"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed rgba(255,255,255,0.1);">
+                        <span style="color: var(--text-secondary);">Total Liability:</span>
+                        <span id="revTotal" style="color: white; font-weight: bold; font-size: 1.2rem; font-family: monospace;"></span>
+                    </div>
+                    
+                    <div id="scheduleContainer" style="color: var(--accent-gold); font-size: 0.9rem;">
+                        </div>
+                </div>
+
+                <p style="font-size: 0.85rem; color: #64748B; margin-bottom: 20px;">By proceeding, funds will be instantly injected into your vault balance.</p>
+                
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="goToPhase(2)">Back</button>
+                    <button class="glass-btn" onclick="document.getElementById('termsModal').style.display='flex'">Review Terms ↗</button>
+                </div>
+            </div>
+
+            <div id="phase4" class="wizard-step">
+                <h2 style="color: #00ff88;">Final Authorization</h2>
+                <p>Enter your 4-digit PIN to legally execute this contract.</p>
+                <input type="password" id="loanPin" class="glass-input" maxlength="4" style="font-size: 2.5rem; letter-spacing: 15px; text-align: center; margin-top: 20px;" placeholder="••••">
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="goToPhase(3)">Back</button>
+                    <button class="glass-btn" onclick="executeLoan()">Issue Funds</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- THE FIX: Bumping the elevation (z-index) so it absolutely sits above the Wizard overlay -->
+    <div id="termsModal" class="modal-overlay" style="display: none; z-index: 9999;">
+        <div class="glass-panel" style="width: 450px;">
+            <h2 style="color: var(--accent-gold); margin-top: 0;">Institutional Agreement</h2>
+            
+            <div class="terms-box" id="termsScrollBox" onscroll="checkTermsScroll()">
+                <p><strong>1. Repayment Obligations:</strong> The Borrower agrees to repay the principal amount plus any accrued institutional interest according to the selected schedule.</p>
+                <p><strong>2. Late Penalties:</strong> Failure to meet the installment deadline will result in an immediate deduction of your FICO Credit Score, permanently reducing your future borrowing multipliers.</p>
+                <p><strong>3. Severe Default:</strong> An account falling 90 days into arrears will trigger an irrevocable system ban from all future credit facilities.</p>
+                <p><strong>4. Automated Deductions:</strong> DigitalBank reserves the right to automatically sweep incoming deposits to offset delinquent loan balances.</p>
+                <p><i>Scroll to the bottom to acknowledge these terms.</i></p>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                <input type="checkbox" id="termsCheck" disabled style="transform: scale(1.2);">
+                <label style="font-size: 0.85rem; color: var(--text-secondary);">I accept the Institutional Credit terms.</label>
+            </div>
+
+            <div class="btn-container">
+                <button class="glass-btn secondary" onclick="document.getElementById('termsModal').style.display='none'">Decline</button>
+                <button class="glass-btn" id="acceptTermsBtn" style="opacity: 0.5; cursor: not-allowed;" onclick="acceptTerms()">Proceed to Signature</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="customAlertModal" class="modal-overlay" style="display: none; z-index: 3000;">
+        <div class="glass-panel" style="width: 320px; padding: 30px 20px; text-align: center;">
+            <div id="alertIcon" style="margin-bottom: 15px;"></div>
+            <h2 id="alertTitle" style="margin-top: 0; color: white; font-size: 1.5rem;">Alert</h2>
+            <p id="alertMessage" style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 25px;"></p>
+            <button class="glass-btn" onclick="document.getElementById('customAlertModal').style.display='none'">Understood</button>
+        </div>
+    </div>
+
+    <!-- THE FIX: Universal Secure Logout Modal -->
+    <div id="logoutModal" class="modal-overlay" style="z-index: 3000;">
+        <div class="glass-panel" style="width: 320px; text-align: center;">
+            <h2 style="margin-top: 0; color: white;">Are you sure?</h2>
+            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 25px;">Do you really want to securely log out of your vault?</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="glass-btn secondary" onclick="document.getElementById('logoutModal').style.display='none'">Cancel</button>
+                <button class="glass-btn" style="background: #FF4D4F; color: white;" onclick="performLogout()">Yes, Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="./home.html" class="nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            Home
+        </a>
+        <a href="./loan.html" class="nav-item active">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            Loans
+        </a>
+        <a href="./savings.html" class="nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            Savings
+        </a>
+        <a href="./profile.html" class="nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            Profile
+        </a>
+    </div>
+
+    <script>
+        let userId = localStorage.getItem("digitalBankId");
+        let userAcc = "";
+        let globalCreditScore = 750; // THE FIX: Storing the score in memory
+        
+        // THE FIX: The Interactive Alert Engine
+        function showCustomAlert(title, message, isError = true) {
+            document.getElementById("alertTitle").innerText = title;
+            document.getElementById("alertMessage").innerText = message;
+            
+            // Dynamically assigns a glowing red X or a glowing green Checkmark
+            let icon = isError ? 
+                `<svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#FF4D4F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 10px rgba(255, 77, 79, 0.4));"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>` : 
+                `<svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.4));"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+            
+            document.getElementById("alertIcon").innerHTML = icon;
+            document.getElementById("customAlertModal").style.display = "flex";
+        }
+
+        // Mathematical Loan State Engines
+        let maxLimit = 0;
+        let selectedPrincipal = 0;
+        let selectedDays = 0;
+        let selectedRate = 0;
+        let totalOwed = 0;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!userId) window.location.assign("./index.html");
+
+            fetch("http://206.189.113.64:8080/api/user", {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ googleId: userId })
+            }).then(res => res.json()).then(data => {
+                userAcc = data.accountNumber;
+                
+                // THE FIX: Injecting the fetched score into the UI
+                globalCreditScore = data.creditScore;
+                document.getElementById("creditScoreDisplay").innerText = globalCreditScore;
+                
+                checkLoanStatus(userAcc);
+                loadLoanHistory(userId, data.accountNumber);
+            }).catch(err => console.error("Initialization Failed:", err));
+        });
+
+        // The State Hydration Engine
+        function checkLoanStatus(acc) {
+            fetch("http://206.189.113.64:8080/api/loan-status", {
+                method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({account: acc})
+            }).then(res => res.json()).then(data => {
+                if(data.hasLoan) {
+                    document.getElementById("noLoanState").style.display = "none";
+                    document.getElementById("activeLoanState").style.display = "block";
+                    
+                    let formatMoney = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(data.remainingOwed);
+                    document.getElementById("owedDisplay").innerText = formatMoney;
+                    
+                    // THE FIX: Removed the broken override block. The backend RepayLoanHandler already
+                    // computes the correct next_due_date using (clearedInstallments + 1) * 30 days
+                    // and saves it to the DB after every payment. The old frontend block was using
+                    // (clearedInstallments * 30 days) — which always pointed at the month you JUST
+                    // PAID, not the NEXT month due, causing the "frozen date" and "off by 1" bugs.
+                    // We now simply trust data.dueDate, which is always the server's authoritative answer.
+                    document.getElementById("dueDateDisplay").innerText = data.dueDate;
+                    // THE FIX: Use the new dueNow variable instead of the fixed installmentAmount
+                    document.getElementById("dueAmountDisplay").innerText = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(data.dueNow);
+                } else {
+                    document.getElementById("noLoanState").style.display = "block";
+                    document.getElementById("activeLoanState").style.display = "none";
+                    calculateLoanLimit(acc); 
+                }
+            }).catch(err => {
+                console.error("Status Check Failed. Running Limit Calculator anyway.");
+                calculateLoanLimit(acc);
+            });
+        }
+
+        // THE FIX: The Bulletproof 10% Limit Calculator
+        function calculateLoanLimit(acc) {
+            fetch("http://206.189.113.64:8080/api/transactions", {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ googleId: userId })
+            }).then(res => res.json()).then(transactions => {
+                let totalSpent = 0;
+                
+                // Force strict string conversion to prevent mathematical mismatch
+                let cleanAcc = String(acc).trim();
+                
+                transactions.forEach(tx => {
+                    // THE FIX: Shifted to read senderAcc so the math doesn't break now that tx.sender is a real name!
+                    let cleanSender = String(tx.senderAcc).trim();
+                    // If you sent the money, it counts towards your limit
+                    if (cleanSender === cleanAcc) {
+                        totalSpent += Number(tx.amount);
+                    }
+                });
+                
+                // THE FIX: The FICO Trust Multiplier Engine
+                let multiplier = 0.10; // Default 10%
+                if (globalCreditScore < 700) multiplier = 0.08;
+                if (globalCreditScore < 600) multiplier = 0.06;
+                if (globalCreditScore < 500) multiplier = 0.00; // Total Ban
+                
+                maxLimit = totalSpent * multiplier; 
+                
+                let formatMoney = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(maxLimit);
+                document.getElementById("loanLimitDisplay").innerText = formatMoney;
+                document.getElementById("wizardLimitText").innerText = formatMoney;
+            }).catch(err => {
+                document.getElementById("loanLimitDisplay").innerText = "$0.00";
+            });
+        }
+        
+        // Credit History Ledger 
+        function loadLoanHistory(googleId, acc) {
+            fetch("http://206.189.113.64:8080/api/transactions", {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ googleId: googleId })
+            }).then(res => res.json()).then(txs => {
+                let ledger = document.getElementById("loanHistoryLedger");
+                ledger.innerHTML = "";
+                let loanTxs = txs.filter(tx => tx.description.includes("Credit"));
+                
+                if(loanTxs.length === 0) {
+                    ledger.innerHTML = `<div class="tx-row" style="justify-content: center; color: #64748B;">No previous credit lines found.</div>`;
+                    return;
+                }
+                
+                loanTxs.slice(0,3).forEach(tx => {
+                    let isDisbursement = tx.description.includes("Disbursement");
+                    let color = isDisbursement ? "#00ff88" : "#FF4D4F";
+                    let sign = isDisbursement ? "+" : "-";
+                    let formattedAmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tx.amount);
+                    
+                    ledger.innerHTML += `
+                        <div class="tx-row">
+                            <div class="tx-info">
+                                <div class="tx-details">
+                                    <p style="color: ${color};">${tx.description}</p>
+                                    <small style="color: #64748B;">${tx.timestamp}</small>
+                                </div>
+                            </div>
+                            <div class="tx-amount" style="color: ${color}; font-family: monospace;">${sign}${formattedAmt}</div>
+                        </div>`;
+                });
+            });
+        }
+
+        // 2. Wizard Navigation & Option Highlighting
+        function openLoanWizard() {
+            if (maxLimit <= 0) return showCustomAlert("Action Denied", "You do not have enough spending history to unlock a credit line.");
+            document.getElementById("loanWizardModal").style.display = "flex";
+            goToPhase(1);
+        }
+
+        function goToPhase(phase) {
+            document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+            document.getElementById(`phase${phase}`).classList.add('active');
+            if (phase === 3) calculateBreakdown(); 
+        }
+
+        function validateLoanAmount() {
+            let req = document.getElementById("requestAmount").value;
+            let err = document.getElementById("amountErr");
+            if (!req || req <= 0) return err.innerText = "Enter valid amount", err.style.display="block";
+            if (req > maxLimit) return err.innerText = "Exceeds approved limit.", err.style.display="block";
+            
+            selectedPrincipal = parseFloat(req);
+            err.style.display = "none";
+            goToPhase(2);
+        }
+
+        function selectTerm(days, rate, element) {
+            selectedDays = days;
+            selectedRate = rate;
+            
+            document.querySelectorAll('.loan-option').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById("termErr").style.display = "none";
+            
+            let installBox = document.getElementById("installmentContainer");
+            if (days > 30) {
+                installBox.style.display = "block";
+            } else {
+                installBox.style.display = "none";
+                document.getElementById("repaymentType").value = "once";
+            }
+        }
+
+        // 3. The Amortization Engine
+        function calculateBreakdown() {
+            if (selectedDays === 0) return goToPhase(2), document.getElementById("termErr").style.display="block";
+            
+            let interestAmount = selectedPrincipal * (selectedRate / 100);
+            totalOwed = selectedPrincipal + interestAmount;
+            
+            let formatMoney = (amt) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amt);
+            
+            document.getElementById("revPrincipal").innerText = formatMoney(selectedPrincipal);
+            document.getElementById("revRate").innerText = selectedRate;
+            document.getElementById("revInterest").innerText = formatMoney(interestAmount);
+            document.getElementById("revTotal").innerText = formatMoney(totalOwed);
+
+            let type = document.getElementById("repaymentType").value;
+            let schedBox = document.getElementById("scheduleContainer");
+            let today = new Date();
+            
+            if (type === "once") {
+                let dueObj = new Date(today.getTime() + (selectedDays * 24 * 60 * 60 * 1000));
+                schedBox.innerHTML = `<div>Single Payment Due: <span style="color:white; float:right;">${dueObj.toLocaleDateString()}</span></div>`;
+            } else {
+                let splits = selectedDays / 30;
+                let splitAmount = totalOwed / splits;
+                let htmlStr = `<div style="margin-bottom:10px; color:white;">${splits} Monthly Installments of ${formatMoney(splitAmount)}:</div>`;
+                
+                for (let i = 1; i <= splits; i++) {
+                    let nextDue = new Date(today.getTime() + (i * 30 * 24 * 60 * 60 * 1000));
+                    htmlStr += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; padding-left:10px; border-left:2px solid var(--accent-gold);">
+                                    <span>Month ${i}</span>
+                                    <span style="color:white;">${nextDue.toLocaleDateString()}</span>
+                                </div>`;
+                }
+                schedBox.innerHTML = htmlStr;
+            }
+        }
+
+        // THE FIX: Usability Heuristics - Forcing the user to physically scroll to the bottom of the terms
+        function checkTermsScroll() {
+            let box = document.getElementById("termsScrollBox");
+            let btn = document.getElementById("acceptTermsBtn");
+            let chk = document.getElementById("termsCheck");
+            
+            // If they have scrolled within 10 pixels of the absolute bottom
+            if (box.scrollHeight - box.scrollTop <= box.clientHeight + 10) {
+                chk.disabled = false;
+                chk.checked = true;
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
+            }
+        }
+
+        function acceptTerms() {
+            if (document.getElementById("termsCheck").checked) {
+                document.getElementById('termsModal').style.display = 'none';
+                goToPhase(4);
+            }
+        }
+
+        // THE FIX: Upgraded execution engine with a Transparent Error Pipeline
+        function executeLoan() {
+            let pin = document.getElementById("loanPin").value;
+            if(!/^\d{4}$/.test(pin)) return showCustomAlert("Authentication Error", "Please enter a valid 4-digit PIN.");
+            
+            let type = document.getElementById("repaymentType").value;
+            let dueObj = new Date(new Date().getTime() + (selectedDays > 30 && type === "installments" ? 30 : selectedDays) * 24 * 60 * 60 * 1000);
+            let dueStr = dueObj.toLocaleDateString();
+
+            // THE FIX: Calculating the exact installment amount to send to Java
+            let splits = (type === "once") ? 1 : (selectedDays / 30);
+            let instAmt = totalOwed / splits;
+
+            fetch("http://206.189.113.64:8080/api/take-loan", {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ 
+                    googleId: userId, account: userAcc, principal: selectedPrincipal, 
+                    totalOwed: totalOwed, type: type, installmentAmt: instAmt, dueDate: dueStr, pin: pin 
+                })
+            }).then(res => {
+                // THE FIX: Actively capturing the exact Java crash message and throwing it to the Catch block
+                if(!res.ok) return res.text().then(err => { throw new Error(err); });
+                window.location.reload();
+            }).catch(err => {
+                // THE FIX: Printing the TRUE error to the UI instead of blindly blaming the PIN
+                showCustomAlert("System Error", err.message);
+            });
+        }
+
+        // Repayment execution engine
+        function executeRepayment() {
+            let amt = document.getElementById("repayAmount").value;
+            let pin = document.getElementById("repayPin").value;
+            let errBox = document.getElementById("repayError");
+            
+            if(!amt || amt <= 0) return errBox.innerText = "Enter valid amount.", errBox.style.display="block";
+            if(!/^\d{4}$/.test(pin)) return errBox.innerText = "Enter 4-digit PIN.", errBox.style.display="block";
+            errBox.style.display = "none";
+            
+            fetch("http://206.189.113.64:8080/api/repay-loan", {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ googleId: userId, account: userAcc, amount: amt, pin: pin })
+            }).then(res => {
+                if(!res.ok) return res.text().then(e => {throw new Error(e)});
+                window.location.reload();
+            }).catch(err => {
+                // THE FIX: Route the Java error to our beautifully designed Custom Alert Modal
+                document.getElementById('payLoanModal').style.display = 'none';
+                showCustomAlert("Repayment Denied", err.message);
+            });
+        }
+
+        function performLogout() {
+            localStorage.removeItem("digitalBankId");
+            window.location.replace("./index.html");
+        }
+    </script>
+</body>
+</html>

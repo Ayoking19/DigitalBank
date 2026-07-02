@@ -1,0 +1,846 @@
+/* ==========================================================================
+   1. TYPOGRAPHY & TEXT STYLING
+   ========================================================================== */
+/* Importing a premium editorial serif (Playfair) for authority, and a highly legible sans-serif (Inter) for data readability. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@600;700&display=swap');
+
+:root {
+    /* 2. COLORS & BACKGROUNDS (Institutional Forex Palette) */
+    --bg-midnight: #090B10;          /* Ultra-deep navy/charcoal for the void */
+    --surface-glass: rgba(18, 22, 31, 0.65); /* Translucent container background */
+    --border-micro: rgba(212, 175, 55, 0.15); /* Subtle gold wireframe */
+    --accent-gold: #D4AF37;          /* Classic physical gold accent */
+    --accent-gold-hover: #F3C332;
+    --text-primary: #F8FAFC;         /* Crisp off-white for maximum legibility */
+    --text-secondary: #94A3B8;       /* Muted slate for hierarchical balancing */
+    --text-error: #FF4D4F;           /* High-visibility red for critical alerts */
+    
+    /* 6. ANIMATIONS & MOTION */
+    /* A snappy cubic-bezier curve creates a physical, spring-like feel (250ms) */
+    --motion-snappy: 250ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --motion-smooth: 300ms ease-in-out;
+}
+
+/* OVERRIDING INLINE HTML STYLES */
+body {
+    background-color: var(--bg-midnight) !important;
+    background-image: 
+        radial-gradient(circle at 15% 50%, rgba(212, 175, 55, 0.03), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(212, 175, 55, 0.04), transparent 25%) !important;
+    color: var(--text-primary) !important;
+    font-family: 'Inter', sans-serif !important;
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    
+    /* 3. LAYOUT & POSITIONING */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 5vh !important;
+}
+
+h1, h2 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+h1 {
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #FFFFFF 0%, var(--accent-gold) 100%);
+    -webkit-background-clip: text;
+    /* THE FIX: Adding the standard, universally recognized property to clear the compatibility error */
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+h2 {
+    color: var(--accent-gold);
+    font-size: 1.8rem;
+}
+
+p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* ==========================================================================
+   3 & 4. CONTAINERS, BORDERS & SHAPES
+   ========================================================================== */
+
+/* The Glassmorphism Modal / Backdrop */
+.modal-overlay {
+    display: none; 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    background: rgba(9, 11, 16, 0.85);
+    
+    /* THE FIX: A single, absolute Z-Index to guarantee the modal dominates the screen */
+    z-index: 3000; 
+    
+    /* 5. VISUAL EFFECTS (Glassmorphism) */
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    
+    justify-content: center; 
+    align-items: center; 
+    
+    /* Entrance Animation */
+    animation: fadeIn var(--motion-smooth) forwards;
+}
+
+/* The Main Dashboard / Modal Cards */
+.glass-panel {
+    background: var(--surface-glass);
+    border: 1px solid var(--border-micro);
+    border-radius: 16px; /* Modern, sleek corner rounding */
+    padding: 40px; 
+    width: 100%;
+    max-width: 420px; /* Restricted width for Information Architecture [Guiding the eye to core data] */
+    
+    /* THE FIX: Modal Overflow Management */
+    max-height: 90vh; /* Strictly caps the card height to 90% of the screen */
+    overflow-y: auto; /* Activates internal scrolling if the content is too tall */
+    
+    /* Elevation Depth */
+    box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.7),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    
+    text-align: center; 
+    position: relative;
+    
+    /* 8. BASIC 3D TRANSFORMATIONS */
+    transform-style: preserve-3d;
+    perspective: 1000px;
+    transition: transform var(--motion-smooth), box-shadow var(--motion-smooth);
+}
+
+/* THE FIX: Adding an institutional gold scrollbar specifically for the glass panels */
+.glass-panel::-webkit-scrollbar { width: 6px; }
+.glass-panel::-webkit-scrollbar-thumb { background: var(--accent-gold); border-radius: 4px; }
+
+/* Sub-panels on the dashboard (if you apply this class to dashboard elements) */
+.glass-panel[style*="width: 600px"] {
+    max-width: 600px;
+}
+
+/* 3D Tilt Effect on Hover - Gives a premium, tactile software feel */
+.glass-panel:hover {
+    transform: translateY(-5px) rotateX(2deg) rotateY(-2deg);
+    box-shadow: 
+        20px 30px 60px rgba(0, 0, 0, 0.8),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-color: rgba(212, 175, 55, 0.3);
+}
+
+/* Vault Display Specifics */
+#balanceDisplay {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: 4rem !important;
+    letter-spacing: -1px;
+    color: #FFFFFF;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+#accountDisplay {
+    font-family: 'Inter', monospace; /* Monospace for numbers ensures vertical alignment */
+    color: var(--accent-gold);
+    background: rgba(212, 175, 55, 0.05);
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border-micro);
+}
+
+/* ==========================================================================
+   INPUTS, FORMS & CONTROLS
+   ========================================================================== */
+
+/* THE FIX: CSS Grid for forms allows two inputs side-by-side on desktop */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.input-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding-left: 5px;
+}
+
+.glass-input {
+    background: rgba(0, 0, 0, 0.4); 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary); 
+    padding: 14px 16px; 
+    width: 100%; 
+    border-radius: 8px;
+    font-size: 1rem; 
+    font-family: 'Inter', sans-serif;
+    transition: all var(--motion-snappy);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.glass-input:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+    background: rgba(0, 0, 0, 0.6);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 0 15px rgba(212, 175, 55, 0.3);
+}
+
+/* Dropdown styling for Country Codes */
+select.glass-input {
+    appearance: none;
+    cursor: pointer;
+}
+
+.glass-input[readonly] {
+    color: var(--accent-gold);
+    background: rgba(212, 175, 55, 0.05);
+    letter-spacing: 3px;
+    font-family: 'Inter', monospace;
+    text-align: center;
+}
+
+/* THE FIX: A premium, scrollable glass container for Legal Terms */
+.terms-box {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    height: 200px;
+    overflow-y: auto;
+    padding: 15px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-align: left;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+/* Custom Gold Scrollbar for the Terms Box */
+.terms-box::-webkit-scrollbar { width: 6px; }
+.terms-box::-webkit-scrollbar-thumb { background: var(--accent-gold); border-radius: 4px; }
+
+/* ==========================================================================
+   MULTI-STEP WIZARD UI
+   ========================================================================== */
+.wizard-step {
+    display: none; /* Hide all steps by default */
+    animation: fadeIn var(--motion-smooth) forwards;
+}
+
+.wizard-step.active {
+    display: block; /* Only show the active step */
+}
+
+.progress-container {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: var(--accent-gold);
+    width: 25%; /* Starts at Step 1 */
+    transition: width var(--motion-smooth);
+    box-shadow: 0 0 10px var(--accent-gold);
+}
+
+/* ==========================================================================
+   BUTTONS & CALLS TO ACTION (CTA)
+   ========================================================================== */
+
+.btn-container {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.glass-btn {
+    background: var(--accent-gold); 
+    border: 1px solid transparent;
+    padding: 14px 24px; 
+    color: var(--bg-midnight); 
+    font-weight: 600; 
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+    border-radius: 8px;
+    cursor: pointer; 
+    width: 100%; 
+    transition: all var(--motion-snappy);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+}
+
+.glass-btn:hover {
+    background: var(--accent-gold-hover);
+    box-shadow: 0 0 25px rgba(212, 175, 55, 0.6);
+}
+
+.glass-btn:active {
+    transform: scale(0.98);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+.glass-btn.secondary {
+    background: transparent;
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+    box-shadow: none;
+}
+
+.glass-btn.secondary:hover {
+    border-color: var(--text-primary);
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.05);
+}
+
+/* ==========================================================================
+   DATA VALIDATION VISUALS
+   ========================================================================== */
+
+.error-text {
+    color: var(--text-error);
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: none; 
+    text-align: left;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(255, 77, 79, 0.05);
+    border: 1px solid rgba(255, 77, 79, 0.2);
+    border-radius: 6px;
+    
+    /* Slide down and fade in */
+    animation: slideDown 200ms ease-out forwards;
+}
+
+/* ==========================================================================
+   7. RESPONSIVENESS & ADAPTABILITY
+   (Moved to the absolute bottom of the file to ensure override priority)
+   ========================================================================== */
+
+/* ==========================================================================
+   KEYFRAME ANIMATIONS
+   ========================================================================== */
+
+@keyframes fadeIn {
+    from { opacity: 0; backdrop-filter: blur(0px); }
+    to { opacity: 1; backdrop-filter: blur(12px); }
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   GOOGLE BUTTON WRAPPER (Premium Integration)
+   ========================================================================== */
+.google-btn-wrapper {
+    display: flex;
+    justify-content: center;
+    /* THE FIX: Using fit-content to forcefully shrink-wrap the container to the exact size of Google's button */
+    width: fit-content;
+    /* THE FIX: Adding 'auto' to the left and right margins to mathematically center the shrunken wrapper inside the card */
+    margin: 0 auto 25px auto;
+    /* THE FIX: Injecting a 2px micro-padding so the hover shadow doesn't clip the top and bottom of the button */
+    padding: 2px;
+    border-radius: 40px; /* Pre-rounded to match Google's pill shape */
+    transition: transform var(--motion-snappy), box-shadow var(--motion-snappy);
+    background: transparent;
+}
+
+/* THE FIX: Applying our institutional gold glow without physical bouncing */
+.google-btn-wrapper:hover {
+    box-shadow: 0 0 25px rgba(212, 175, 55, 0.4);
+}
+
+.google-btn-wrapper:active {
+    transform: scale(0.98); /* A subtle physical press effect inward */
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+}
+
+/* ==========================================================================
+   DASHBOARD ARCHITECTURE (home.html)
+   ========================================================================== */
+.top-nav {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto 30px auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+.nav-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, #FFFFFF 0%, var(--accent-gold) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: bold;
+}
+
+.nav-logout {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color var(--motion-snappy);
+}
+
+.nav-logout:hover {
+    color: var(--text-error);
+}
+
+.dashboard-wrapper {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 40px;
+    padding: 0 20px;
+    box-sizing: border-box;
+    animation: slideDown var(--motion-smooth) forwards;
+}
+
+/* The Physical 'Black Card' */
+.black-card {
+    background: linear-gradient(135deg, rgba(30,35,45,0.9) 0%, #050608 100%);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 20px;
+    padding: 35px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 
+        0 30px 60px -15px rgba(0,0,0,0.9),
+        inset 0 1px 2px rgba(255,255,255,0.1);
+    transform-style: preserve-3d;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+}
+
+.black-card:hover {
+    transform: translateY(-10px) rotateX(4deg) rotateY(-4deg) scale(1.02);
+    box-shadow: 
+        25px 40px 70px rgba(0,0,0,0.9),
+        inset 0 1px 2px rgba(212,175,55,0.2);
+}
+
+/* Hyper-realistic EMV Chip */
+.card-chip {
+    width: 45px;
+    height: 35px;
+    background: linear-gradient(135deg, #E6C27A 0%, #B89045 100%);
+    border-radius: 6px;
+    margin-bottom: 40px;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.2);
+    opacity: 0.9;
+}
+
+.dashboard-section-title {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-family: 'Inter', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    margin-top: 0;
+}
+
+.action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 40px;
+}
+
+/* Glassmorphism Quick Actions */
+.action-square {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-micro);
+    border-radius: 16px;
+    padding: 25px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--motion-snappy);
+    backdrop-filter: blur(10px);
+}
+
+.action-square:hover {
+    background: rgba(212, 175, 55, 0.05);
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.25);
+}
+
+.action-icon {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+}
+
+.action-text {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+/* Simulated Ledger / Transaction List */
+.tx-list {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.tx-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background var(--motion-snappy);
+}
+
+.tx-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tx-row:last-child {
+    border-bottom: none;
+}
+
+.tx-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.tx-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(0, 255, 136, 0.1);
+    color: #00ff88;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* THE FIX: Revoking the browser's permission to compress this element */
+    flex-shrink: 0; 
+    transition: all var(--motion-snappy);
+}
+
+/* THE FIX: Ensuring any SVG placed inside the circle automatically scales to fit perfectly */
+.tx-icon svg {
+    transition: all var(--motion-snappy);
+}
+
+.tx-details p {
+    color: var(--text-primary);
+    margin: 0 0 5px 0;
+    font-weight: 500;
+}
+
+.tx-amount {
+    font-family: 'Inter', monospace;
+    font-weight: 600;
+    color: #00ff88;
+}
+
+/* ==========================================================================
+   THE 5-TIER RESPONSIVE ARCHITECTURE (TVs down to iPhone 4)
+   ========================================================================== */
+
+/* THE FIX: Universal Box Sizing strictly prevents padding from breaking screen widths on mobile */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* THE FIX: TIER 1 - Ultra-Wide Screens & TVs (1440px and up) */
+@media (min-width: 1440px) {
+    .dashboard-wrapper, .top-nav {
+        max-width: 1400px; 
+    }
+    #balanceDisplay {
+        font-size: 4.5rem !important; 
+    }
+    .black-card {
+        padding: 50px;
+    }
+}
+
+/* THE FIX: TIER 2 - All Tablets & Small Laptops (1024px and below) */
+@media (max-width: 1024px) {
+    .dashboard-wrapper {
+        grid-template-columns: 1fr; /* Force the vertical stack on all tablets */
+        gap: 25px;
+    }
+    .black-card {
+        margin-bottom: 10px;
+    }
+}
+
+/* THE FIX: TIER 3 - Standard Mobile Phones (768px and below) */
+@media (max-width: 768px) {
+    body {
+        padding-top: 2vh !important;
+    }
+    /* Forcing all 2-column forms to collapse into a beautiful, single vertical stack on mobile */
+    .form-grid {
+        grid-template-columns: 1fr !important;
+    }
+    /* THE FIX: Overriding inline HTML grid spans so they don't break the mobile layout */
+    .form-grid > div {
+        grid-column: span 1 !important;
+    }
+    /* Forcing all side-by-side buttons to stack vertically so they don't get squished */
+    .btn-container {
+        flex-direction: column !important;
+    }
+    .glass-panel {
+        width: 95%;
+        padding: 30px 20px;
+        margin: 0 auto;
+    }
+    #balanceDisplay {
+        font-size: 3rem !important;
+    }
+    /* Force any side-by-side buttons to stack vertically */
+    div[style*="display: flex; gap: 15px"] {
+        flex-direction: column;
+        gap: 10px !important;
+    }
+    
+    /* THE FIX: Fluid Typography Scale. Bumping up the font size and padding to maintain readability on wider mobile screens */
+    .input-label {
+        font-size: 0.9rem;
+    }
+    .glass-input {
+        font-size: 1.1rem;
+        padding: 16px 14px;
+    }
+    p {
+        font-size: 1rem;
+    }
+    .glass-btn {
+        font-size: 1.1rem;
+        padding: 16px 24px;
+    }
+}
+
+/* THE FIX: TIER 4 - Small Mobile / iPhone SE (480px and below) */
+@media (max-width: 480px) {
+    .glass-panel, .black-card {
+        padding: 25px 15px; /* Shrink padding to maximize screen real estate */
+    }
+    /* THE FIX: Mathematically shrinking the circle and its internal arrow strictly on mobile */
+    .tx-icon {
+        width: 32px;
+        height: 32px;
+    }
+    .tx-icon svg {
+        width: 16px;
+        height: 16px;
+    }
+    #balanceDisplay {
+        font-size: 2.3rem !important; /* Prevent text overflow on balance */
+    }
+    .action-grid {
+        grid-template-columns: 1fr; /* Stack quick actions vertically */
+    }
+    h1 {
+        font-size: 1.8rem; /* Shrink the main DigitalBank logo on login */
+    }
+    .glass-input {
+        font-size: 1rem;
+        padding: 12px 10px;
+    }
+}
+
+/* THE FIX: TIER 5 - Micro Screens / iPhone 4 (340px and below) */
+@media (max-width: 340px) {
+    .glass-panel, .black-card {
+        padding: 20px 10px; /* Absolute minimum padding */
+    }
+    #balanceDisplay {
+        font-size: 1.8rem !important;
+    }
+    #accountDisplay {
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+        padding: 6px 10px;
+    }
+    .nav-logo {
+        font-size: 1.2rem;
+    }
+    h2 {
+        font-size: 1.4rem;
+    }
+    /* Shrink Google button container mathematically to prevent side-scrolling */
+    .google-btn-wrapper {
+        transform: scale(0.85);
+        transform-origin: center;
+        margin-bottom: 15px;
+    }
+}
+
+/* ==========================================================================
+   WIRE TRANSFER & BENEFICIARY UI
+   ========================================================================== */
+.slider-section { margin-bottom: 30px; text-align: left; }
+.slider-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
+.slider-title { font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+.view-all { font-size: 0.8rem; color: var(--accent-gold); cursor: pointer; transition: color var(--motion-snappy); }
+.view-all:hover { color: var(--text-primary); }
+
+/* Horizontal Scroll Container */
+/* THE FIX: Added 10px padding to the top so the cards have physical space to move up without being clipped */
+.slider-container { display: flex; gap: 15px; overflow-x: auto; padding-top: 10px; padding-bottom: 15px; }
+.slider-container::-webkit-scrollbar { height: 4px; }
+.slider-container::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.5); border-radius: 4px; }
+
+/* Beneficiary Cards */
+.bene-card {
+    min-width: 110px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-micro);
+    border-radius: 12px; padding: 15px; text-align: center; cursor: pointer;
+    transition: all var(--motion-snappy); flex-shrink: 0;
+}
+.bene-card:hover { border-color: var(--accent-gold); background: rgba(212, 175, 55, 0.05); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+.bene-avatar {
+    width: 45px; height: 45px; border-radius: 50%; background: rgba(212, 175, 55, 0.1);
+    color: var(--accent-gold); display: flex; align-items: center; justify-content: center;
+    font-weight: bold; margin: 0 auto 10px auto; font-size: 1.2rem; border: 1px solid var(--border-micro);
+}
+.bene-name { font-size: 0.85rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* The Beneficiary Toggle Switch */
+.toggle-wrapper { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid rgba(255,255,255,0.05); }
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .3s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+input:checked + .slider { background-color: #0A84FF; box-shadow: 0 0 15px rgba(10, 132, 255, 0.6); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* Dynamic Account Lookup Result */
+.search-result { background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.3); padding: 15px; border-radius: 8px; margin-top: 10px; cursor: pointer; display: none; animation: slideDown 0.3s forwards; }
+.search-result:hover { background: rgba(0, 255, 136, 0.1); box-shadow: 0 0 15px rgba(0, 255, 136, 0.2); }
+
+/* THE FIX: Upgrading the Receipt Layout to an Institutional Dark-Mode Standard */
+.receipt-container { 
+    background: linear-gradient(135deg, #1E232D 0%, #050608 100%);
+    color: var(--text-primary); 
+    padding: 35px; 
+    border-radius: 16px; 
+    text-align: left; 
+    margin-bottom: 25px; 
+    font-family: 'Inter', sans-serif; 
+    border: 1px solid var(--accent-gold);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+}
+.receipt-header { 
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3); 
+    padding-bottom: 15px; 
+    margin-bottom: 20px; 
+    text-align: center; 
+}
+.receipt-row { 
+    display: flex; 
+    justify-content: space-between; 
+    margin-bottom: 12px; 
+    font-size: 0.95rem; 
+    color: var(--text-secondary);
+}
+.receipt-row span:last-child {
+    color: var(--text-primary);
+    font-family: 'Inter', monospace;
+}
+
+/* ==========================================================================
+   EPIC 4: NAVIGATION, ADD MONEY & LOAN UI
+   ========================================================================== */
+
+/* Universal Bottom Navigation */
+.bottom-nav {
+    position: fixed; bottom: 0; left: 0;
+    width: 100%; background: rgba(18, 18, 18, 0.98);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-micro); display: flex;
+    justify-content: space-around; padding: 10px 0 15px 0; z-index: 1000;
+}
+
+/* THE FIX: Premium Institutional Styling for Dropdown Menus */
+select.glass-input {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23D4AF37%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 16px;
+    padding-right: 40px;
+    cursor: pointer;
+}
+
+select.glass-input option {
+    background-color: var(--bg-midnight);
+    color: var(--text-primary);
+    padding: 15px;
+}
+.nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    color: var(--text-secondary); cursor: pointer; transition: all var(--motion-snappy);
+    text-decoration: none; font-size: 0.75rem; font-weight: 500;
+}
+.nav-item:hover, .nav-item.active { color: var(--accent-gold); transform: translateY(-2px); }
+
+/* Add Money Mini-Button */
+.add-money-btn {
+    background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3);
+    color: #00ff88; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem;
+    cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px;
+}
+.add-money-btn:hover { background: rgba(0, 255, 136, 0.2); box-shadow: 0 0 10px rgba(0,255,136,0.2); }
+
+/* Loan Module Specifics */
+.loan-limit-card {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(0,0,0,0.8) 100%);
+    border: 1px solid var(--accent-gold); border-radius: 12px; padding: 25px; text-align: center;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4); margin-bottom: 25px;
+}
+.loan-option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+.loan-option {
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border-micro);
+    border-radius: 8px; padding: 15px; text-align: center; cursor: pointer; transition: all 0.2s;
+}
+.loan-option:hover, .loan-option.selected {
+    background: rgba(212, 175, 55, 0.1); border-color: var(--accent-gold);
+}
+/* Padding buffer so content doesn't hide behind the new bottom nav */
+body { padding-bottom: 90px; }

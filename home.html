@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- THE FIX: The Viewport Meta Tag forces mobile phones to respect our CSS screen widths -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigitalBank | Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body style="background-color: #121212; color: white; font-family: Arial, sans-serif; padding-top: 30px;">
+
+    <nav class="top-nav">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-gold);">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="12 22 12 8"></polyline>
+                <polyline points="9 11 12 8 15 11"></polyline>
+            </svg>
+            <div class="nav-logo">DigitalBank</div>
+        </div>
+        <!-- THE FIX: Triggering the Modal instead of logging out instantly -->
+        <div class="nav-logout" onclick="document.getElementById('logoutModal').style.display='flex'">Secure Logout</div>
+    </nav>
+
+    <div class="dashboard-wrapper">
+        
+        <div>
+            <div class="black-card">
+                <div class="card-chip"></div>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+                    <p style="color: #94A3B8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Available Vault Balance</p>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <button class="add-money-btn" onclick="document.getElementById('addMoneyModal').style.display='flex'">+ Add Money</button>
+                        <div id="eyeIcon" onclick="toggleBalance()" style="cursor: pointer; color: #94A3B8; transition: color var(--motion-snappy);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <h1 id="balanceDisplay" style="font-size: 3rem; margin-top: 0; margin-bottom: 40px; color: white; text-shadow: none; transition: opacity var(--motion-snappy);">$0.00</h1>
+                
+                <p style="color: #94A3B8; margin-bottom: 5px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Account Number</p>
+                <h3 id="accountDisplay" style="letter-spacing: 4px; margin-top: 0; color: var(--accent-gold); font-family: 'Inter', monospace; font-weight: 400;">Loading...</h3>
+            </div>
+        </div>
+
+        <div class="dashboard-actions">
+            
+            <h2 class="dashboard-section-title">Quick Actions</h2>
+            <div class="action-grid">
+                <div class="action-square" onclick="window.location.assign('./transfer.html')">
+                    <!-- THE FIX: A professional, minimal 'Up-Right Arrow' SVG -->
+                    <div class="action-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="7" y1="17" x2="17" y2="7"></line>
+                            <polyline points="7 7 17 7 17 17"></polyline>
+                        </svg>
+                    </div>
+                    <div class="action-text">Send Funds</div>
+                </div>
+                <div class="action-square" onclick="window.location.assign('./analytics.html')">
+                    <div class="action-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                    </div>
+                    <div class="action-text">Analytics</div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+                <h2 class="dashboard-section-title" style="margin-bottom: 0;">Recent Activity</h2>
+                <span class="view-all" style="font-size: 0.85rem; color: var(--accent-gold); cursor: pointer; transition: color var(--motion-snappy);" onclick="window.location.assign('./history.html')">View All</span>
+            </div>
+            
+            <div class="tx-list" id="transactionLedger">
+                <div class="tx-row">
+                    <div class="tx-info">
+                        <!-- THE FIX: A perfectly centered 'Down Arrow' SVG for incoming deposits -->
+                        <div class="tx-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <polyline points="19 12 12 19 5 12"></polyline>
+                            </svg>
+                        </div>
+                        <div class="tx-details">
+                            <p>Initial Vault Deposit</p>
+                            <small style="color: #64748B;">System Generated</small>
+                        </div>
+                    </div>
+                    <div class="tx-amount">+$50,000.00</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="transferModal" class="modal-overlay">
+        <div class="glass-panel" style="width: 350px;">
+            <h2 style="color: var(--accent-gold);">Wire Transfer</h2>
+            <p>Receiver's 10-Digit Account:</p>
+            <input type="text" id="receiverAccount" class="glass-input" maxlength="10" placeholder="0000000000">
+            <div id="transferAccError" class="error-text"></div>
+            
+            <p>Amount ($):</p>
+            <input type="number" id="transferAmount" class="glass-input" placeholder="0.00">
+            <div id="amountError" class="error-text"></div>
+            
+            <p>Confirm with 4-Digit PIN:</p>
+            <input type="password" id="transferPin" class="glass-input" maxlength="4" placeholder="••••">
+            <div id="transferPinError" class="error-text"></div>
+            
+            <!-- THE FIX: Flex-wrap container prevents squishing and ensures perfect mobile scaling -->
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+                <button class="glass-btn" style="width: auto; flex: 1; min-width: 150px;" onclick="executeTransfer()">Authorize Transfer</button>
+                <button class="glass-btn secondary" style="width: auto; flex: 1; min-width: 150px;" onclick="document.getElementById('transferModal').style.display = 'none'">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <div id="receiptModal" class="modal-overlay" style="display: none; z-index: 1000;">
+        <div class="glass-panel" style="width: 400px; padding: 30px 20px;">
+            <div class="receipt-container" id="receiptData" style="position: relative; margin-bottom: 20px;">
+                <div class="receipt-header">
+                    <div style="display: flex; justify-content: center; margin-bottom: 10px;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                            <polyline points="12 22 12 8"></polyline>
+                            <polyline points="9 11 12 8 15 11"></polyline>
+                        </svg>
+                    </div>
+                    <strong style="font-size: 1.2rem; color: white;">DIGITALBANK</strong><br>
+                    <small style="color: var(--accent-gold);">Official Transaction Receipt</small>
+                </div>
+                <div class="receipt-row"><span>ID:</span> <span id="recId" style="color: white; font-family: monospace;"></span></div>
+                <div class="receipt-row"><span>Date:</span> <span id="recDate"></span></div>
+                <div class="receipt-row"><span>Sender:</span> <span id="recSender"></span></div>
+                <div class="receipt-row"><span>To:</span> <span id="recName"></span></div>
+                <div class="receipt-row"><span>Desc:</span> <span id="recDesc"></span></div>
+                <div class="receipt-row" style="margin-top: 15px; font-weight: bold; font-size: 1.2rem; border-top: 1px dashed rgba(212, 175, 55, 0.3); padding-top: 15px;">
+                    <span>Amount:</span> <span id="recAmt" style="color: #00ff88;"></span>
+                </div>
+            </div>
+
+            <div class="btn-container">
+                <button class="glass-btn secondary" onclick="closeReceiptSafe()">Close & Refresh</button>
+                <button class="glass-btn" onclick="downloadReceiptSafe()">Download Image ↓</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addMoneyModal" class="modal-overlay" style="display: none; z-index: 1000;">
+        <div class="glass-panel" style="width: 350px;">
+            <h2 style="color: #00ff88; margin-top: 0;">Add Funds</h2>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Securely inject capital into your vault from external sources.</p>
+            <input type="number" id="addAmount" class="glass-input" placeholder="Amount (USD)" style="margin-bottom: 15px;">
+            <input type="password" id="addPin" class="glass-input" maxlength="4" placeholder="4-Digit PIN" style="margin-bottom: 15px; text-align: center; letter-spacing: 10px;">
+            <div id="addMoneyError" class="error-text" style="display:none;"></div>
+            <!-- THE FIX: Flex-wrap container prevents squishing -->
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+                <button class="glass-btn" style="width: auto; flex: 1; min-width: 150px;" onclick="executeAddMoney()">Confirm Deposit</button>
+                <button class="glass-btn secondary" style="width: auto; flex: 1; min-width: 150px;" onclick="document.getElementById('addMoneyModal').style.display = 'none'">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- THE FIX: Universal Secure Logout Modal -->
+    <div id="logoutModal" class="modal-overlay" style="z-index: 3000;">
+        <div class="glass-panel" style="width: 320px; text-align: center;">
+            <h2 style="margin-top: 0; color: white;">Are you sure?</h2>
+            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 25px;">Do you really want to securely log out of your vault?</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="glass-btn secondary" onclick="document.getElementById('logoutModal').style.display='none'">Cancel</button>
+                <button class="glass-btn" style="background: #FF4D4F; color: white;" onclick="performLogout()">Yes, Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="./home.html" class="nav-item active">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            Home
+        </a>
+        <a href="./loan.html" class="nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            Loans
+        </a>
+        <a href="./savings.html" class="nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            Savings
+        </a>
+        <a href="./profile.html" class="nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            Profile
+        </a>
+    </div>
+
+    <script>
+        // The Global Master Keys & State Memory
+        let userId = "";
+        let receiptShownAt = 0; // THE FIX: Timestamp to block ghost clicks
+        
+        function closeReceiptSafe() {
+            // THE FIX: Increased the ghost-click shield to 2000ms (2 seconds)
+            if (Date.now() - receiptShownAt < 2000) return;
+            window.location.reload();
+        }
+        function downloadReceiptSafe() {
+            if (Date.now() - receiptShownAt < 2000) return;
+            downloadReceipt();
+        }
+        let myAccountNumber = ""; 
+        let currentFormattedBalance = ""; // THE FIX: Global memory to remember the exact dollar amount
+        let isBalanceHidden = false;      // THE FIX: A strict boolean toggle state
+
+        document.addEventListener("DOMContentLoaded", () => {
+            userId = localStorage.getItem("digitalBankId");
+            console.log("Dashboard loaded. Found ID: ", userId);
+            
+            if (!userId || userId === "undefined" || userId === "null") {
+                console.warn("Backpack is empty! Returning to lobby.");
+                let kickTarget = window.location.origin + "/index.html";
+                window.location.assign(kickTarget);
+                return;
+            }
+
+            // 1. Fetching your Balance from the Java Vault
+            fetch("http://206.189.113.64:8080/api/user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ googleId: userId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("accountDisplay").innerText = data.accountNumber;
+                myAccountNumber = data.accountNumber; 
+                
+                // THE FIX: Format the balance and save it to our global memory BEFORE printing it to the screen
+                currentFormattedBalance = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(data.balance);
+                document.getElementById("balanceDisplay").innerText = currentFormattedBalance;
+                
+                // 2. Trigger the Dynamic Ledger Engine using the user's fetched account number
+                loadTransactionHistory(userId, data.accountNumber);
+            })
+            .catch(error => {
+                console.error("Failed to connect to vault:", error);
+                document.getElementById("accountDisplay").innerText = "Connection Error";
+            });
+        });
+
+        // THE FIX: The Balance Visibility Engine
+        function toggleBalance() {
+            let balDisplay = document.getElementById("balanceDisplay");
+            let eyeIcon = document.getElementById("eyeIcon");
+            
+            isBalanceHidden = !isBalanceHidden; // Flip the boolean switch
+            
+            // Add a brief fade effect for premium visual polish
+            balDisplay.style.opacity = "0.3";
+            
+            setTimeout(() => {
+                if (isBalanceHidden) {
+                    balDisplay.innerText = "••••••••"; // Render security asterisks
+                    // Swap to a "Slashed Eye" SVG
+                    eyeIcon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+                    eyeIcon.style.color = "var(--text-secondary)";
+                } else {
+                    balDisplay.innerText = currentFormattedBalance; // Restore the true balance from memory
+                    // Swap back to the "Open Eye" SVG
+                    eyeIcon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+                    eyeIcon.style.color = "var(--text-primary)";
+                }
+                balDisplay.style.opacity = "1";
+            }, 150); // 150ms delay perfectly matches our snappy CSS animations
+        }
+        
+        // 3. The Dynamic Ledger Engine
+        function loadTransactionHistory(googleId, myAccountNumber) {
+            fetch("http://206.189.113.64:8080/api/transactions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ googleId: googleId })
+            })
+            .then(response => response.json())
+            .then(transactions => {
+                let ledger = document.getElementById("transactionLedger");
+                if (!ledger) return;
+                
+                ledger.innerHTML = ""; // Clear out the "Loading ledger..." text
+                
+                if (transactions.length === 0) {
+                    ledger.innerHTML = `<div class="tx-row" style="justify-content: center; color: #64748B;">No recent transfers found.</div>`;
+                    return;
+                }
+                
+                // THE FIX: Slicing the database array to strictly extract only the 3 newest transactions
+                let recentTransactions = transactions.slice(0, 3);
+                
+                // The Rendering Loop
+                recentTransactions.forEach(tx => {
+                    // THE FIX: We MUST use the raw receiverAcc for math, NOT the resolved Name, otherwise every transaction falsely flags as a Debit!
+                    let isIncoming = (tx.receiverAcc === myAccountNumber);
+                    
+                    let iconBg = isIncoming ? "rgba(0, 255, 136, 0.1)" : "rgba(255, 77, 79, 0.1)";
+                    let iconColor = isIncoming ? "#00ff88" : "#FF4D4F";
+                    let sign = isIncoming ? "+" : "-";
+                    let title = isIncoming ? `Transfer from ${tx.sender}` : `Transfer to ${tx.receiver}`;
+                    
+                    let svgIcon = isIncoming ? 
+                        `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>` : 
+                        `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>`;
+                    
+                    let formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(tx.amount);
+                    
+                    // Security escaping just in case a user typed a single quote in their description (e.g. "Mom's Gift")
+                    let safeDesc = tx.description.replace(/'/g, "\\'");
+                    
+                    // THE FIX: We must pass BOTH the Name and the Account Number to the receipt so it can display both!
+                    ledger.innerHTML += `
+                        <div class="tx-row" onclick="openReceipt('${tx.id}', '${tx.timestamp}', '${tx.sender}', '${tx.senderAcc}', '${tx.receiver}', '${tx.receiverAcc}', '${safeDesc}', '${formattedAmount}')" style="cursor: pointer; transition: background 0.2s;">
+                            <div class="tx-info">
+                                <div class="tx-icon" style="background: ${iconBg}; color: ${iconColor}; flex-shrink: 0;">
+                                    ${svgIcon}
+                                </div>
+                                <div class="tx-details">
+                                    <p>${title}</p>
+                                    <small style="color: #64748B;">${tx.timestamp}</small>
+                                </div>
+                            </div>
+                            <div class="tx-amount" style="color: ${iconColor}; font-family: 'Inter', monospace; font-weight: 600;">
+                                ${sign}${formattedAmount}
+                            </div>
+                        </div>
+                    `;
+                });
+            })
+            .catch(error => console.error("Ledger rendering failed:", error));
+        }
+
+        // 4. The Wire Transfer Engine (RESTORED)
+        function executeTransfer() {
+            let receiver = document.getElementById("receiverAccount").value;
+            let amount = document.getElementById("transferAmount").value;
+            let pin = document.getElementById("transferPin").value;
+            
+            document.getElementById("transferAccError").style.display = "none";
+            document.getElementById("amountError").style.display = "none";
+            document.getElementById("transferPinError").style.display = "none";
+            
+            let hasError = false;
+
+            if (!/^\d{10}$/.test(receiver)) {
+                document.getElementById("transferAccError").innerText = "Must be a valid 10-digit account.";
+                document.getElementById("transferAccError").style.display = "block";
+                hasError = true;
+            }
+            
+            // THE FIX: Comparing the user's input directly against their global account number
+            if (receiver === myAccountNumber) {
+                document.getElementById("transferAccError").innerText = "You cannot transfer funds to yourself.";
+                document.getElementById("transferAccError").style.display = "block";
+                hasError = true;
+            }
+
+            if (amount <= 0 || amount === "") {
+                document.getElementById("amountError").innerText = "Enter a valid amount.";
+                document.getElementById("amountError").style.display = "block";
+                hasError = true;
+            }
+            if (!/^\d{4}$/.test(pin)) {
+                document.getElementById("transferPinError").innerText = "Enter your 4-digit PIN.";
+                document.getElementById("transferPinError").style.display = "block";
+                hasError = true;
+            }
+
+            if (hasError) return; 
+
+            let transferData = {
+                senderId: userId,
+                receiverAcc: receiver,
+                transferAmount: amount,
+                senderPin: pin
+            };
+
+            fetch("http://206.189.113.64:8080/api/transfer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(transferData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(err => { throw new Error(err); });
+                }
+                return response.json(); // Parse the True ID JSON from Java!
+            })
+            .then(data => {
+                document.getElementById("transferModal").style.display = "none";
+                let formattedAmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+                
+                // THE FIX: Plugs the authentic Auto-Increment ID straight into the receipt and keeps the modal open indefinitely!
+                openReceipt(data.id, new Date().toLocaleString(), "My Secure Vault", myAccountNumber, "External Vault", receiver, "Manual Wire Transfer", formattedAmt);
+            })
+            .catch(error => {
+                console.error("Transfer failed:", error);
+                // THE FIX: Strips the ugly "Error: " prefix from Java and displays a clean alert
+                alert(error.message.replace("Error: ", "")); 
+            });
+        }
+
+        // THE FIX: The Interactive Data Hydration Engine (Now handles Account Numbers and real generated IDs)
+        function openReceipt(id, date, senderName, senderAcc, receiverName, receiverAcc, desc, amount) {
+            document.getElementById("recId").innerText = id;
+            document.getElementById("recDate").innerText = date;
+            
+            let isIncoming = (receiverAcc === myAccountNumber);
+            
+            // THE FIX: Using explicit <br> tags and inline styles to force the Account Number onto a clean new line
+            document.getElementById("recSender").innerHTML = isIncoming ? 
+                `${senderName}<br><span style="display:block; font-size: 0.75rem; color: #94A3B8;">Account: ${senderAcc}</span>` : 
+                `My Secure Vault<br><span style="display:block; font-size: 0.75rem; color: #94A3B8;">Account: ${myAccountNumber}</span>`;
+            
+            document.getElementById("recName").innerHTML = isIncoming ? 
+                `My Secure Vault<br><span style="display:block; font-size: 0.75rem; color: #94A3B8;">Account: ${myAccountNumber}</span>` : 
+                `${receiverName}<br><span style="display:block; font-size: 0.75rem; color: #94A3B8;">Account: ${receiverAcc}</span>`;
+            
+            document.getElementById("recDesc").innerText = desc;
+            document.getElementById("recAmt").innerText = amount;
+            
+            document.getElementById("receiptModal").style.display = "flex";
+            receiptShownAt = Date.now(); // Record exact time it opens to prevent ghost clicks
+        }
+
+        function downloadReceipt() {
+            let receiptDiv = document.getElementById("receiptData");
+            html2canvas(receiptDiv, {
+                backgroundColor: "#090B10", 
+                scale: 2 
+            }).then(canvas => {
+                let link = document.createElement("a");
+                link.download = "DigitalBank_Receipt_" + new Date().getTime() + ".png";
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            });
+        }
+
+        function executeAddMoney() {
+            let amount = document.getElementById("addAmount").value;
+            let pin = document.getElementById("addPin").value;
+            let errBox = document.getElementById("addMoneyError");
+            errBox.style.display = "none";
+
+            if (amount <= 0 || amount === "") return errBox.innerText = "Enter valid amount.", errBox.style.display = "block";
+            if (!/^\d{4}$/.test(pin)) return errBox.innerText = "Enter 4-digit PIN.", errBox.style.display = "block";
+
+            fetch("http://206.189.113.64:8080/api/add-money", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ googleId: userId, amount: amount, pin: pin })
+            })
+            .then(res => {
+                if (!res.ok) return res.text().then(err => { throw new Error(err); });
+                window.location.reload();
+            })
+            .catch(err => { errBox.innerText = err.message; errBox.style.display = "block"; });
+        }
+
+        // THE FIX: Renamed to match the modal's execution button
+        function performLogout() {
+            localStorage.removeItem("digitalBankId");
+            let kickTarget = window.location.origin + "/index.html";
+            window.location.replace(kickTarget);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigitalBank | Wire Transfer</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body style="background-color: #121212; color: white; font-family: Arial, sans-serif; padding-top: 30px; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh;">
+
+    <nav class="top-nav" style="max-width: 600px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-gold);">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="12 22 12 8"></polyline>
+                <polyline points="9 11 12 8 15 11"></polyline>
+            </svg>
+            <div class="nav-logo" style="font-size: 1.3rem;">DigitalBank</div>
+        </div>
+        <div class="nav-logout" style="cursor: pointer; font-size: 0.9rem;" onclick="window.location.assign('./home.html')">Cancel</div>
+    </nav>
+
+    <div class="glass-panel" style="max-width: 600px; width: 90%; padding: 30px 20px;">
+        <h2 style="margin-top: 0; text-align: left; margin-bottom: 30px;">Wire Transfer</h2>
+
+        <div class="input-group" style="text-align: left; margin-bottom: 30px;">
+            <label class="input-label">Account Number Search</label>
+            <input type="text" id="lookupInput" class="glass-input" maxlength="10" placeholder="Enter 10-Digit Account..." oninput="simulateLookup()" autocomplete="off">
+            
+            <div id="lookupResult" class="search-result" style="padding: 0; background: transparent; border: none; cursor: default;"></div>
+        </div>
+
+        <div class="slider-section">
+            <div class="slider-header">
+                <span class="slider-title">Recent Transfers</span>
+            </div>
+            <div class="slider-container" id="recentSlider">
+                <div style="color: #64748B; font-size: 0.85rem; padding: 15px;">Loading recent activity...</div>
+            </div>
+        </div>
+
+        <div class="slider-section">
+            <div class="slider-header">
+                <span class="slider-title">Beneficiaries</span>
+                <span class="view-all">View All</span>
+            </div>
+            <div class="slider-container" id="beneficiarySlider">
+                <div style="color: #64748B; font-size: 0.85rem; padding: 15px;">Loading saved contacts...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="transferWizardModal" class="modal-overlay">
+        <div class="glass-panel" style="width: 400px; padding: 30px 20px;">
+            
+            <div id="phase1" class="wizard-step active">
+                <div class="bene-avatar" id="wizardAvatar" style="width: 70px; height: 70px; font-size: 1.8rem; margin-bottom: 15px;">?</div>
+                <h2 id="wizardName" style="margin-bottom: 5px;">Name</h2>
+                <p id="wizardAccount" style="font-family: monospace; color: var(--accent-gold); letter-spacing: 2px; font-size: 1.1rem;">0000000000</p>
+                
+                <div class="toggle-wrapper">
+                    <span style="font-size: 0.9rem; font-weight: 500;">Add to Beneficiaries</span>
+                    <label class="switch">
+                        <input type="checkbox" id="beneToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="closeWizard()">Close</button>
+                    <button class="glass-btn" onclick="goToPhase(2)">Confirm ↗</button>
+                </div>
+            </div>
+
+            <div id="phase2" class="wizard-step">
+                <h2>Enter Amount</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Transferring to <span id="phase2Name" style="color: white; font-weight: bold;"></span></p>
+                
+                <input type="number" id="sendAmount" class="glass-input" style="font-size: 2rem; padding: 20px; margin-bottom: 5px;" placeholder="0.00" autocomplete="off">
+                <p style="font-size: 0.85rem; color: #94A3B8; margin-top: 5px; margin-bottom: 20px;">Available Balance: <span id="wizardBalance" style="color: white;">Loading...</span></p>
+                
+                <p style="color: var(--text-secondary); font-size: 0.85rem; text-align: left; margin-bottom: 5px;">Transfer Description (Optional)</p>
+                <input type="text" id="sendDesc" class="glass-input" placeholder="e.g. Dinner, Rent..." autocomplete="off" maxlength="30">
+                
+                <div id="amountError" class="error-text" style="text-align: center; font-size: 1rem; margin-top: 15px;"></div>
+
+                <div class="btn-container" style="margin-top: 30px;">
+                    <button type="button" class="glass-btn secondary" onclick="goToPhase(1)">Back</button>
+                    <button type="button" class="glass-btn" onclick="validateAmount()">Confirm ↗</button>
+                </div>
+            </div>
+
+            <div id="phase3" class="wizard-step">
+                <h2>Security Verification</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Enter your 4-digit PIN to authorize this transfer.</p>
+                
+                <input type="password" id="sendPin" class="glass-input" maxlength="4" style="font-size: 2.5rem; letter-spacing: 15px; text-align: center;" placeholder="••••" autocomplete="new-password">
+                
+                <div id="pinError" class="error-text" style="text-align: center; font-size: 1rem; margin-top: 15px;"></div>
+
+                <div class="btn-container" style="margin-top: 30px;">
+                    <button type="button" class="glass-btn secondary" onclick="goToPhase(2)">Back</button>
+                    <button type="button" class="glass-btn" onclick="processTransferUI()">Authorize Transfer</button>
+                </div>
+            </div>
+
+            <div id="phase4" class="wizard-step">
+                <h2 style="color: #00ff88; margin-bottom: 20px;">Transfer Successful</h2>
+                
+                <div class="receipt-container" id="receiptData" style="position: relative;">
+                    <div class="receipt-header">
+                        <div style="display: flex; justify-content: center; margin-bottom: 10px;">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                <polyline points="12 22 12 8"></polyline>
+                                <polyline points="9 11 12 8 15 11"></polyline>
+                            </svg>
+                        </div>
+                        <strong style="font-size: 1.2rem; color: white;">DIGITALBANK</strong><br>
+                        <small style="color: var(--accent-gold);">Official Transaction Receipt</small>
+                    </div>
+                    <div class="receipt-row"><span>ID:</span> <span id="recId" style="color: white;"></span></div>
+                    <div class="receipt-row"><span>Date:</span> <span id="recDate"></span></div>
+                    <div class="receipt-row"><span>Sender:</span> <span id="recSender"></span></div>
+                    <div class="receipt-row"><span>To:</span> <span id="recName"></span></div>
+                    <div class="receipt-row"><span>Account:</span> <span id="recAcc"></span></div>
+                    <div class="receipt-row"><span>Desc:</span> <span id="recDesc"></span></div>
+                    <div class="receipt-row" style="margin-top: 15px; font-weight: bold; font-size: 1.2rem; border-top: 1px dashed rgba(212, 175, 55, 0.3); padding-top: 15px;">
+                        <span>Amount:</span> <span id="recAmt" style="color: #00ff88;"></span>
+                    </div>
+                </div>
+
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="closeReceiptSafe()">Close & Refresh</button>
+                    <button class="glass-btn" onclick="downloadReceiptSafe()">Download Image ↓</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let userId = localStorage.getItem("digitalBankId");
+        let selectedName = "";
+        let selectedAccount = "";
+        
+        // THE FIX: Global memory state to power the live toggle logic
+        let myAccountNumber = ""; 
+        let globalBeneficiaries = [];
+
+        // 1. Fetching the actual balance securely for Phase 2
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!userId) window.location.assign("./index.html");
+
+            // THE FIX: The Resurrection Engine. If Live Server refreshed the page, this instantly pulls the receipt back from memory and forces the modal open.
+            let frozenReceipt = sessionStorage.getItem("frozenReceipt");
+            if (frozenReceipt) {
+                let rec = JSON.parse(frozenReceipt);
+                // THE FIX: rec.id now contains the full "TRX-0000000042" string from
+                // the server. Removed the old "TRX-" + rec.id concatenation which was
+                // producing a doubled prefix: "TRX-TRX-0000000042".
+                document.getElementById("recId").innerText = rec.id;
+                document.getElementById("recDate").innerText = rec.date;
+                document.getElementById("recSender").innerText = "My Secure Vault";
+                document.getElementById("recName").innerText = rec.name;
+                document.getElementById("recAcc").innerText = rec.account;
+                document.getElementById("recDesc").innerText = rec.desc;
+                document.getElementById("recAmt").innerText = rec.amount;
+                
+                // Rip the modal open directly to Phase 4
+                document.getElementById("transferWizardModal").style.display = "flex";
+                goToPhase(4);
+
+                // THE FIX: Disable the Close and Download buttons immediately after
+                // showing the receipt, using the same disabled-button ghost-click
+                // protection used in profile.html. Re-enable after 1.5 seconds.
+                let closeBtn = document.querySelector('#phase4 .glass-btn.secondary');
+                let dlBtn = document.querySelector('#phase4 .glass-btn:not(.secondary)');
+                [closeBtn, dlBtn].forEach(b => { if(b) { b.disabled = true; b.style.opacity = "0.4"; b.style.cursor = "not-allowed"; } });
+                setTimeout(() => {
+                    [closeBtn, dlBtn].forEach(b => { if(b) { b.disabled = false; b.style.opacity = "1"; b.style.cursor = "pointer"; } });
+                }, 1500);
+                
+                // Clear the memory so it doesn't loop forever
+                sessionStorage.removeItem("frozenReceipt"); 
+            }
+
+            fetch("http://206.189.113.64:8080/api/user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ googleId: userId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                let formatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(data.balance);
+                document.getElementById("wizardBalance").innerText = formatted;
+                
+                myAccountNumber = data.accountNumber;
+                
+                // Trigger the initial layout builds for both sliders
+                loadBeneficiaries(userId);
+                loadRecentTransfers(userId, data.accountNumber);
+            })
+            .catch(err => console.error("Could not fetch balance."));
+        });
+        
+        // THE FIX: The Live Beneficiary State Manager with Optimistic UI Updating
+        function updateBeneficiaryState() {
+            let toggle = document.getElementById("beneToggle");
+            let action = toggle.checked ? "add" : "remove";
+
+            // 1. OPTIMISTIC UPDATE: Instantly alter local memory so the UI feels instantly responsive
+            if (action === "add") {
+                if (!globalBeneficiaries.some(b => b.account === selectedAccount)) {
+                    globalBeneficiaries.unshift({ name: selectedName, account: selectedAccount });
+                }
+            } else {
+                globalBeneficiaries = globalBeneficiaries.filter(b => b.account !== selectedAccount);
+            }
+            renderBeneficiarySlider(globalBeneficiaries); // Instantly draw the new cards
+
+            // 2. BACKGROUND SYNC: Silently tell Java to update the SQLite database
+            fetch("http://206.189.113.64:8080/api/manage-beneficiary", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    googleId: userId,
+                    beneAccount: selectedAccount,
+                    beneName: selectedName,
+                    action: action
+                })
+            }).then(res => {
+                if (!res.ok) throw new Error("Server Error");
+                loadBeneficiaries(userId); 
+            }).catch(err => {
+                console.error("Sync Error:", err);
+                alert("Network Sync Error: Could not save to Vault. Did you compile your Java Server?");
+                loadBeneficiaries(userId); // Revert UI to database truth if Java fails
+            });
+        }
+
+        // THE FIX: The Dynamic Recent Transfers Engine
+        function loadRecentTransfers(googleId, myAcc) {
+            fetch("http://206.189.113.64:8080/api/transactions", {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ googleId: googleId })
+            })
+            .then(res => res.json())
+            .then(transactions => {
+                let recentSlider = document.getElementById("recentSlider");
+                if(!recentSlider) return;
+                recentSlider.innerHTML = "";
+                let uniqueAccs = [];
+
+                // Scan the entire ledger to find unique counter-parties
+                transactions.forEach(tx => {
+                    let otherAcc = (tx.sender === myAcc) ? tx.receiver : tx.sender;
+                    if (otherAcc !== "SYSTEM" && !uniqueAccs.includes(otherAcc)) {
+                        uniqueAccs.push(otherAcc);
+                    }
+                });
+
+                if (uniqueAccs.length === 0) {
+                    recentSlider.innerHTML = `<div style="color: #64748B; font-size: 0.85rem; padding: 15px;">No recent transfers.</div>`;
+                    return;
+                }
+
+                // Slice to the top 5 most recent, and fire a rapid lookup to get their real names and avatars
+                uniqueAccs.slice(0, 5).forEach(acc => {
+                    fetch("http://206.189.113.64:8080/api/lookup", {
+                        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ account: acc })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        let initials = data.name.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase();
+                        recentSlider.innerHTML += `
+                            <div class="bene-card" onclick="openTransferWizard('${data.name}', '${data.account}')">
+                                <div class="bene-avatar" style="border: 1px solid var(--border-micro);">${initials}</div>
+                                <div class="bene-name">${data.name}</div>
+                            </div>
+                        `;
+                    }).catch(err => console.log("Skipped deleted account: " + acc));
+                });
+            });
+        }
+
+        // THE FIX: The Render Engine separated from the Fetch Engine
+        function renderBeneficiarySlider(contacts) {
+            let slider = document.getElementById("beneficiarySlider");
+            if (!slider) return;
+            slider.innerHTML = ""; 
+            
+            if (contacts.length === 0) {
+                slider.innerHTML = `<div style="color: #64748B; font-size: 0.85rem; padding: 15px;">No beneficiaries saved yet. Toggle "Add" to save a contact!</div>`;
+                return;
+            }
+            
+            contacts.forEach(contact => {
+                let initials = contact.name.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase();
+                slider.innerHTML += `
+                    <div class="bene-card" onclick="openTransferWizard('${contact.name}', '${contact.account}')">
+                        <div class="bene-avatar" style="background: rgba(10, 132, 255, 0.1); border-color: #0A84FF; color: #0A84FF;">${initials}</div>
+                        <div class="bene-name">${contact.name}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // THE FIX: The Dynamic Beneficiary Fetcher (Now securely pushing to the Render Engine)
+        function loadBeneficiaries(googleId) {
+            fetch("http://206.189.113.64:8080/api/beneficiaries", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ googleId: googleId })
+            })
+            .then(res => res.json())
+            .then(contacts => {
+                globalBeneficiaries = contacts; 
+                renderBeneficiarySlider(globalBeneficiaries);
+            })
+            .catch(err => console.error("Could not load beneficiaries:", err));
+        }
+
+        // THE FIX: The Live Database Account Scanner
+        function simulateLookup() {
+            let input = document.getElementById("lookupInput").value;
+            let resultBox = document.getElementById("lookupResult");
+            
+            if (input.length === 10) {
+                resultBox.style.display = "block";
+                resultBox.innerHTML = `<div style="color: #64748B; font-size: 0.85rem; padding: 15px; border: 1px solid var(--border-micro); border-radius: 8px; background: rgba(255,255,255,0.03);">Scanning Vault...</div>`;
+                
+                // Transmitting the 10 digits to Java for verification
+                fetch("http://206.189.113.64:8080/api/lookup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ account: input })
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error("Account Not Found");
+                    return res.json();
+                })
+                .then(data => {
+                    // Extract initials dynamically for the avatar
+                    let initials = data.name.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase();
+                    
+                    // Injecting the glowing green verified card
+                    resultBox.innerHTML = `
+                        <div style="background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.3); padding: 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 15px; transition: background 0.2s;" onclick="openTransferWizard('${data.name}', '${data.account}')">
+                            <div class="bene-avatar" style="margin: 0; background: rgba(0, 255, 136, 0.2); color: #00ff88; border-color: #00ff88;">${initials}</div>
+                            <div>
+                                <div style="font-weight: bold; color: #00ff88; font-size: 1rem;">${data.name}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Verified Account Found</div>
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch(err => {
+                    // Injecting the glowing red error card if the vault rejects the number
+                    resultBox.innerHTML = `
+                        <div style="background: rgba(255, 77, 79, 0.05); border: 1px solid rgba(255, 77, 79, 0.3); padding: 15px; border-radius: 8px; display: flex; align-items: center; gap: 15px;">
+                            <div class="bene-avatar" style="margin: 0; background: rgba(255, 77, 79, 0.2); color: #FF4D4F; border-color: #FF4D4F;">X</div>
+                            <div>
+                                <div style="font-weight: bold; color: #FF4D4F; font-size: 1rem;">Unknown Account</div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">Please check the account number</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                // Instantly hide the box if they press backspace and drop below 10 digits
+                resultBox.style.display = "none";
+            }
+        }
+
+        // 3. Opens the Wizard and injects the selected user's data
+        function openTransferWizard(name, account) {
+            selectedName = name;
+            selectedAccount = account;
+            
+            document.getElementById("wizardName").innerText = name;
+            document.getElementById("phase2Name").innerText = name;
+            document.getElementById("wizardAccount").innerText = account;
+            
+            // Generate Avatar Initials
+            let initials = name.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase();
+            document.getElementById("wizardAvatar").innerText = initials;
+
+            // THE FIX: Checking global memory to see if they are already saved
+            let isSaved = globalBeneficiaries.some(b => b.account === account);
+            let toggle = document.getElementById("beneToggle");
+            
+            // We detach the listener temporarily so changing the checked state doesn't trigger a false API hit
+            toggle.onchange = null; 
+            toggle.checked = isSaved;
+            // Now we attach our live engine
+            toggle.onchange = updateBeneficiaryState; 
+
+            document.getElementById("transferWizardModal").style.display = "flex";
+            goToPhase(1);
+        }
+
+        function closeWizard() {
+            document.getElementById("transferWizardModal").style.display = "none";
+            document.getElementById("beneToggle").checked = false;
+            document.getElementById("sendAmount").value = "";
+            document.getElementById("sendPin").value = "";
+        }
+
+        function goToPhase(phaseNumber) {
+            document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+            document.getElementById(`phase${phaseNumber}`).classList.add('active');
+        }
+
+        // THE FIX: The New Amount Validator
+        function validateAmount() {
+            let amount = document.getElementById("sendAmount").value;
+            let errBox = document.getElementById("amountError");
+            if(!amount || amount <= 0) {
+                errBox.innerText = "Please enter a valid transfer amount.";
+                errBox.style.display = "block";
+                return;
+            }
+            errBox.style.display = "none";
+            goToPhase(3);
+        }
+
+        let transactionCounter = 1;
+
+        // THE FIX: Connecting the UI to the actual Java Database Engine without browser alerts
+        function processTransferUI() {
+            let amount = document.getElementById("sendAmount").value;
+            let pin = document.getElementById("sendPin").value;
+            let desc = document.getElementById("sendDesc").value || "Funds Transfer";
+            let saveBene = document.getElementById("beneToggle").checked; 
+            
+            let pinErr = document.getElementById("pinError");
+            pinErr.style.display = "none";
+            
+            if(!/^\d{4}$/.test(pin)) {
+                pinErr.innerText = "Please enter your 4-digit PIN.";
+                pinErr.style.display = "block";
+                return;
+            }
+            
+            // Compiling the 6-piece payload to send to Java
+            let transferData = {
+                senderId: userId,
+                receiverAcc: selectedAccount,
+                transferAmount: amount,
+                senderPin: pin,
+                description: desc,
+                saveBeneficiary: saveBene
+            };
+
+            // Transmitting the payload to the local Vault
+            fetch("http://206.189.113.64:8080/api/transfer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(transferData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(err => { throw new Error(err); });
+                }
+                return response.text();
+            })
+            .then(serverMessage => {
+                // THE FIX: Parse the JSON response from the Java server to extract
+                // the REAL auto-incremented database Transaction ID (e.g. "TRX-0000000042"),
+                // replacing the old local counter which always showed "TRX-0000000001"
+                // because it reset to 1 on every single page reload.
+                let parsed = {};
+                try { parsed = JSON.parse(serverMessage); } catch(e) {}
+                let formattedId = parsed.id || ("TRX-" + String(Date.now()).slice(-10));
+
+                let formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+                
+                // THE FIX: We stop drawing the receipt twice. We just package the data instantly into memory.
+                let receiptMemory = {
+                    id: formattedId,
+                    date: new Date().toLocaleString(),
+                    name: selectedName,
+                    account: selectedAccount,
+                    desc: desc,
+                    amount: formattedAmount
+                };
+                sessionStorage.setItem("frozenReceipt", JSON.stringify(receiptMemory));
+                
+                // THE FIX: We manually trigger the page reload immediately, allowing the Resurrection Engine to draw the receipt perfectly once.
+                window.location.reload();
+            })
+            .catch(error => {
+                console.error("Transfer failed:", error);
+                // THE FIX: Pushing the Java error directly into our premium glowing red text box
+                let pinErr = document.getElementById("pinError");
+                pinErr.innerText = error.message;
+                pinErr.style.display = "block";
+                goToPhase(3); 
+            });
+        }
+
+        function closeReceiptSafe() {
+            // THE FIX: No time-guard needed. The buttons are disabled by the Resurrection
+            // Engine for 1.5 seconds, so by the time this function can be called,
+            // any ghost-click window has already expired.
+            window.location.reload();
+        }
+        function downloadReceiptSafe() {
+            downloadReceipt();
+        }
+        // THE FIX: Added the missing downloadReceipt function. Uses the html2canvas
+        // library (already loaded in the <head>) to take a screenshot [a pixel-perfect
+        // image capture] of the receipt HTML element and trigger a file download.
+        function downloadReceipt() {
+            let receiptEl = document.getElementById("receiptData");
+            html2canvas(receiptEl, { backgroundColor: '#1a1a2e', scale: 2 }).then(canvas => {
+                let link = document.createElement('a');
+                link.download = 'DigitalBank-Receipt.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+    </script>
+</body>
+</html>

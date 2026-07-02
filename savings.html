@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigitalBank | Wealth Reserves</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body style="background-color: #121212; color: white; font-family: Arial, sans-serif; padding-top: 30px; padding-bottom: 90px;">
+
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-gold);">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="12 22 12 8"></polyline>
+                <polyline points="9 11 12 8 15 11"></polyline>
+            </svg>
+            <div class="nav-logo">DigitalBank</div>
+        </div>
+        <!-- THE FIX: Triggering the Modal -->
+        <div class="nav-logout" onclick="document.getElementById('logoutModal').style.display='flex'">Secure Logout</div>
+    </nav>
+
+    <!-- Main Dashboard -->
+    <div class="dashboard-wrapper" style="grid-template-columns: 1fr; max-width: 800px;">
+        
+        <div class="black-card" style="margin-bottom: 30px; border-color: rgba(0, 255, 136, 0.3);">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 30px;">
+                <div>
+                    <p style="color: #00ff88; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 5px 0;">Total Locked Reserves</p>
+                    <h1 id="totalSavingsDisplay" style="margin: 0; font-size: 2.5rem; font-family: 'Inter', monospace; color: white;">$0.00</h1>
+                </div>
+                <button class="glass-btn" style="width: auto; flex-shrink: 0; padding: 10px 15px; font-size: 0.85rem; background: rgba(0,255,136,0.1); color: #00ff88; border: 1px solid rgba(0,255,136,0.3);" onclick="openSavingsWizard()">+ Start Saving</button>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="dashboard-section-title">Active Portfolios</h2>
+            <div class="tx-list" id="activeSavingsLedger">
+                <!-- Data will be dynamically hydrated here -->
+                <div class="tx-row" style="justify-content: center; color: #64748B;">No active savings portfolios.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Savings Origination Wizard -->
+    <div id="savingsWizardModal" class="modal-overlay">
+        <div class="glass-panel" style="width: 480px;">
+            
+            <!-- Phase 1: Category Selection -->
+            <div id="phase1" class="wizard-step active">
+                <h2 style="color: var(--accent-gold); margin-top: 0;">Initialize Reserve</h2>
+                
+                <div class="input-group" style="text-align: left; margin-bottom: 25px;">
+                    <label class="input-label" style="color: #00ff88;">1. Name Your Goal</label>
+                    <input type="text" id="planName" class="glass-input" placeholder="e.g. Birthday, New Car, Vacation..." maxlength="20" style="font-size: 1.2rem; padding: 15px;" autocomplete="off">
+                    <div id="phase1Error" class="error-text" style="margin-top: 10px;"></div>
+                </div>
+
+                <p style="margin-bottom: 15px; color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; text-align: left;">2. Choose Architecture</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div class="loan-option" onclick="selectCategory('DAILY')">
+                        <h3 style="margin: 0 0 5px 0; color: white;">Daily Sweep</h3>
+                        <p style="font-size: 0.8rem; margin: 0;">Automatically sweeps a set amount from your vault every day.</p>
+                    </div>
+                    <div class="loan-option" onclick="selectCategory('TARGET')">
+                        <h3 style="margin: 0 0 5px 0; color: white;">Target Milestone</h3>
+                        <p style="font-size: 0.8rem; margin: 0;">Set a financial goal. Unlocks only when the target is reached.</p>
+                    </div>
+                    <div class="loan-option" onclick="selectCategory('LOCKED')">
+                        <h3 style="margin: 0 0 5px 0; color: white;">Fixed Lock</h3>
+                        <p style="font-size: 0.8rem; margin: 0;">Secure an initial deposit away from your main balance.</p>
+                    </div>
+                </div>
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="closeModal('savingsWizardModal')">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Phase 2: Discipline Selection -->
+            <div id="phase2" class="wizard-step">
+                <h2 style="color: var(--accent-gold); margin-top: 0;">Select Discipline</h2>
+                <p style="margin-bottom: 25px;">Define the psychological rigidity of this savings plan.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <div class="loan-option" onclick="selectDiscipline('STRICT')" style="border-color: rgba(255, 77, 79, 0.3);">
+                        <h3 style="margin: 0 0 5px 0; color: #FF4D4F;">Strict Protocol</h3>
+                        <p style="font-size: 0.8rem; margin: 0;">Absolute lock. Funds cannot be withdrawn under any circumstances until the criteria is met.</p>
+                    </div>
+                    <div class="loan-option" onclick="selectDiscipline('LENIENT')" style="border-color: rgba(0, 255, 136, 0.3);">
+                        <h3 style="margin: 0 0 5px 0; color: #00ff88;">Lenient Protocol</h3>
+                        <p style="font-size: 0.8rem; margin: 0;">Accessible. However, any withdrawal request triggers a strict 12-hour system delay.</p>
+                    </div>
+                </div>
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="goToPhase(1)">Back</button>
+                </div>
+            </div>
+
+            <!-- Phase 3: Dynamic Configuration Form -->
+            <div id="phase3" class="wizard-step">
+                <h2 style="color: var(--accent-gold); margin-top: 0;">Configure Parameters</h2>
+
+                <div id="dynamicFormContainer"></div>
+
+                <div id="configError" class="error-text" style="text-align: center;"></div>
+                
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="goToPhase(2)">Back</button>
+                    <button class="glass-btn" onclick="validateConfiguration()">Generate Contract ↗</button>
+                </div>
+            </div>
+
+            <!-- Phase 4: Terms & Signature -->
+            <div id="phase4" class="wizard-step">
+                <h2 style="color: var(--accent-gold); margin-top: 0;">Institutional Agreement</h2>
+                
+                <div class="terms-box" id="savingsTermsBox">
+                    <!-- Dynamic T&C will be injected here via JavaScript -->
+                </div>
+                
+                <p style="font-size: 0.85rem; color: #64748B; margin-bottom: 20px;">By entering your PIN, you legally authorize this contract.</p>
+                <input type="password" id="savingsPin" class="glass-input" maxlength="4" style="font-size: 2.5rem; letter-spacing: 15px; text-align: center;" placeholder="••••">
+                
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="goToPhase(3)">Back</button>
+                    <button class="glass-btn" onclick="executeSavingsPlan()">Authorize</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- THE FIX: Universal Secure Logout Modal -->
+    <div id="logoutModal" class="modal-overlay" style="z-index: 3000;">
+        <div class="glass-panel" style="width: 320px; text-align: center;">
+            <h2 style="margin-top: 0; color: white;">Are you sure?</h2>
+            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 25px;">Do you really want to securely log out of your vault?</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="glass-btn secondary" onclick="document.getElementById('logoutModal').style.display='none'">Cancel</button>
+                <button class="glass-btn" style="background: #FF4D4F; color: white;" onclick="performLogout()">Yes, Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Universal Bottom Navigation -->
+    <div class="bottom-nav">
+        <a href="./home.html" class="nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            Home
+        </a>
+        <a href="./loan.html" class="nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            Loans
+        </a>
+        <a href="./savings.html" class="nav-item active">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            Savings
+        </a>
+        <a href="./profile.html" class="nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            Profile
+        </a>
+    </div>
+
+    <!-- THE FIX: The Active Portfolio Management Overlay -->
+    <div id="manageSavingsModal" class="modal-overlay" style="display: none; z-index: 2500;">
+        <div class="glass-panel" style="width: 400px; padding: 30px;">
+            <h2 id="managePlanName" style="color: white; margin-top: 0; text-align: left; font-size: 1.5rem;">Portfolio</h2>
+            <p id="managePlanRules" style="color: var(--text-secondary); text-align: left; font-size: 0.85rem; margin-bottom: 25px;"></p>
+            
+            <!-- Fund Section -->
+            <div id="fundSection" style="background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.2); border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: left;">
+                <h3 style="margin: 0 0 15px 0; color: #00ff88; font-size: 1rem;">Inject Capital</h3>
+                <input type="number" id="fundAmount" class="glass-input" placeholder="Amount (USD)" style="margin-bottom: 15px;">
+                <input type="password" id="fundPin" class="glass-input" maxlength="4" placeholder="4-Digit PIN" style="margin-bottom: 15px; text-align: center; letter-spacing: 10px;">
+                <div id="manageFundError" class="error-text" style="text-align: center; margin-bottom: 10px;"></div>
+                <button class="glass-btn" style="padding: 12px; background: rgba(0, 255, 136, 0.2); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.4);" onclick="executeFunding()">Confirm Injection</button>
+            </div>
+
+            <div id="withdrawSection" style="background: rgba(255, 77, 79, 0.05); border: 1px solid rgba(255, 77, 79, 0.2); border-radius: 8px; padding: 15px; margin-bottom: 25px; text-align: left;">
+                <h3 id="withdrawTitle" style="margin: 0 0 15px 0; color: #FF4D4F; font-size: 1rem;">Liquidate Funds</h3>
+                <input type="number" id="withdrawAmount" class="glass-input" placeholder="Amount (USD)" style="margin-bottom: 15px;">
+                <input type="password" id="withdrawPin" class="glass-input" maxlength="4" placeholder="4-Digit PIN" style="margin-bottom: 15px; text-align: center; letter-spacing: 10px;">
+                
+                <div id="manageWithdrawError" class="error-text" style="text-align: center; margin-bottom: 10px;"></div>
+                
+                <button class="glass-btn" style="padding: 12px; background: rgba(255, 77, 79, 0.2); color: #FF4D4F; border: 1px solid rgba(255, 77, 79, 0.4);" onclick="executeWithdrawal()">Confirm Liquidation</button>
+            </div>
+
+            <div id="editSection" style="background: rgba(212, 175, 55, 0.05); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 8px; padding: 15px; margin-bottom: 25px; text-align: left;">
+                <h3 style="margin: 0 0 15px 0; color: var(--accent-gold); font-size: 1rem;">Edit Automation Settings</h3>
+                <input type="number" id="editSweepAmt" class="glass-input" placeholder="New Daily Amount ($)" style="margin-bottom: 15px;">
+                <input type="time" id="editSweepTime" class="glass-input" style="color-scheme: dark; margin-bottom: 15px;">
+                <div id="manageEditError" class="error-text" style="text-align: center; margin-bottom: 10px;"></div>
+                <button class="glass-btn" style="padding: 12px; background: rgba(212, 175, 55, 0.2); color: var(--accent-gold); border: 1px solid rgba(212, 175, 55, 0.4);" onclick="executeEditSweep()">Update Parameters</button>
+            </div>
+
+            <button class="glass-btn secondary" onclick="closeModal('manageSavingsModal')">Close Interface</button>
+        </div>
+    </div>
+
+    <div id="customAlertModal" class="modal-overlay" style="display: none; z-index: 3000;">
+        <div class="glass-panel" style="width: 320px; padding: 30px 20px; text-align: center;">
+            <div id="alertIcon" style="margin-bottom: 15px;"></div>
+            <h2 id="alertTitle" style="margin-top: 0; color: white; font-size: 1.5rem;">Alert</h2>
+            <p id="alertMessage" style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 25px;"></p>
+            <button class="glass-btn" onclick="document.getElementById('customAlertModal').style.display='none'">Understood</button>
+        </div>
+    </div>
+
+    <div id="cancelWithdrawalModal" class="modal-overlay" style="display: none; z-index: 3000;">
+        <div class="glass-panel" style="width: 320px; padding: 30px 20px; text-align: center;">
+            <h2 style="margin-top: 0; color: white; font-size: 1.5rem;">Cancel Withdrawal?</h2>
+            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 25px;">Are you sure you want to cancel this withdrawal request?</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="glass-btn secondary" onclick="document.getElementById('cancelWithdrawalModal').style.display='none'">No</button>
+                <button class="glass-btn" style="background: #FF4D4F; color: white;" onclick="proceedCancelWithdrawal()">Yes, Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let userId = localStorage.getItem("digitalBankId");
+        
+        // Savings State Machine Memory
+        let selectedCategory = "";
+        let selectedDiscipline = "";
+
+        let userAcc = "";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!userId) window.location.assign("./index.html");
+            
+            // 1. Initial Authentication & Account Retrieval
+            fetch("http://206.189.113.64:8080/api/user", {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ googleId: userId })
+            }).then(res => res.json()).then(data => {
+                userAcc = data.accountNumber;
+                loadSavingsPortfolios(userAcc);
+            }).catch(err => console.error("Initialization Failed:", err));
+        });
+
+        // THE FIX: Hydrating the active portfolios onto the dashboard
+        function loadSavingsPortfolios(acc) {
+            fetch("http://206.189.113.64:8080/api/get-savings", {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ account: acc })
+            }).then(res => res.json()).then(plans => {
+                let ledger = document.getElementById("activeSavingsLedger");
+                ledger.innerHTML = "";
+                
+                let totalSavings = 0;
+
+                if (plans.length === 0) {
+                    ledger.innerHTML = `<div class="tx-row" style="justify-content: center; color: #64748B;">No active savings portfolios.</div>`;
+                    return;
+                }
+
+                plans.forEach(plan => {
+                    totalSavings += plan.balance;
+                    
+                    let formatBal = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(plan.balance);
+                    let formatTarget = plan.target > 0 ? " / " + new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(plan.target) : "";
+                    let formatInterest = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(plan.interest);
+                    
+                    let color = plan.discipline === "STRICT" ? "#FF4D4F" : "#00ff88";
+
+                    // THE FIX: Logic for changing "Manage Savings" to "Withdraw" when targets are completed
+                    let isGoalMet = false;
+                    if (plan.category === "TARGET" && plan.balance >= plan.target) isGoalMet = true;
+                    if (plan.category === "DAILY" && plan.endDate && new Date() >= new Date(plan.endDate)) isGoalMet = true;
+                    // Injecting the new Locked Goal evaluation
+                    if (plan.category === "LOCKED" && plan.endDate && new Date() >= new Date(plan.endDate)) isGoalMet = true; 
+                    
+                    let actionBtnText = isGoalMet ? "Withdraw" : "Manage Savings";
+
+                    // THE FIX: The Delete Portfolio Button (Only renders if the balance is completely empty)
+                    let deleteHtml = "";
+                    if (plan.balance <= 0) {
+                        deleteHtml = `<button class="glass-btn" style="width: auto; background: rgba(255, 77, 79, 0.1); color: #FF4D4F; border: 1px solid rgba(255, 77, 79, 0.3); padding: 8px 15px; font-size: 0.8rem;" onclick="deletePortfolio(${plan.id})">Delete</button>`;
+                    }
+
+                    // THE FIX: Added 'width: auto' and 'flex-shrink: 0' to mathematically prevent the Cancel button from stretching or squeezing text!
+                    let countdownHtml = "";
+                    if (plan.timeLeft > 0) {
+                        countdownHtml = `
+                            <div style="margin-top: 15px; padding: 15px; background: rgba(255, 165, 0, 0.05); border: 1px solid rgba(255, 165, 0, 0.3); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <p style="margin: 0; color: #FFA500; font-size: 0.85rem; font-weight: bold;">Cooling Period Active</p>
+                                    <p style="margin: 5px 0 0 0; color: white; font-family: monospace; font-size: 1.1rem;" class="countdown-timer" data-time="${plan.timeLeft}">--:--:--</p>
+                                </div>
+                                <button class="glass-btn secondary" style="width: auto; flex-shrink: 0; padding: 8px 15px; font-size: 0.8rem; border-color: #FFA500; color: #FFA500;" onclick="triggerCancelWithdrawal(${plan.id})">Cancel</button>
+                            </div>
+                        `;
+                    }
+                    
+                    ledger.innerHTML += `
+                        <div class="black-card" style="padding: 20px; border-color: rgba(255,255,255,0.05); margin-bottom: 15px; border-radius: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <div>
+                                    <h3 style="margin: 0; color: white; display: flex; align-items: center; gap: 10px;">
+                                        ${plan.name} 
+                                        <span style="font-size: 0.7rem; padding: 2px 8px; background: rgba(0, 255, 136, 0.1); color: #00ff88; border-radius: 12px; border: 1px solid rgba(0,255,136,0.3);">+${formatInterest} Yield</span>
+                                    </h3>
+                                    <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: ${color};">${plan.category} • ${plan.discipline}</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <h2 style="margin: 0; color: var(--accent-gold); font-family: monospace;">${formatBal}${formatTarget}</h2>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                ${deleteHtml}
+                                <!-- THE FIX: Passing the TOTAL balance (Base + Yield) into the UI controller so the user can withdraw every penny! -->
+                                <button class="glass-btn secondary" style="padding: 8px 15px; font-size: 0.8rem;" onclick="openManageModal(${plan.id}, '${plan.name}', '${plan.discipline}', '${plan.category}', ${isGoalMet}, ${plan.balance + plan.interest})">${actionBtnText}</button>
+                            </div>
+                            ${countdownHtml}
+                        </div>
+                    `;
+                });
+
+                document.getElementById("totalSavingsDisplay").innerText = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalSavings);
+                
+                // THE FIX: Start the global countdown timer loop
+                startCountdownTimers();
+            });
+        }
+
+        // Universal UI Engine
+        function showCustomAlert(title, message, isError = true) {
+            document.getElementById("alertTitle").innerText = title;
+            document.getElementById("alertMessage").innerText = message;
+            let icon = isError ? 
+                `<svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#FF4D4F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 10px rgba(255, 77, 79, 0.4));"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>` : 
+                `<svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.4));"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+            document.getElementById("alertIcon").innerHTML = icon;
+            document.getElementById("customAlertModal").style.display = "flex";
+        }
+
+        function openSavingsWizard() {
+            document.getElementById("savingsWizardModal").style.display = "flex";
+            goToPhase(1);
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = "none";
+        }
+
+        function goToPhase(phase) {
+            document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+            document.getElementById(`phase${phase}`).classList.add('active');
+        }
+
+        // THE FIX: The Selection Engine (Now shielded by a Validation Gate for the Name)
+        function selectCategory(category) {
+            let name = document.getElementById("planName").value.trim();
+            let err = document.getElementById("phase1Error");
+            
+            if (!name) {
+                err.innerText = "Please name your savings goal before selecting an architecture.";
+                err.style.display = "block";
+                return;
+            }
+            err.style.display = "none";
+            
+            selectedCategory = category;
+            goToPhase(2);
+        }
+
+        function selectDiscipline(discipline) {
+            selectedDiscipline = discipline;
+            renderDynamicForm(); // Draw the specific form before opening Phase 3
+            goToPhase(3);
+        }
+
+        // The Dynamic HTML Rendering Engine [Injects specific input fields based on the user's Phase 1 choice]
+        function renderDynamicForm() {
+            let container = document.getElementById("dynamicFormContainer");
+            let html = "";
+
+            if (selectedCategory === "DAILY") {
+                html = `
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label class="input-label">Daily Deduction ($)</label>
+                            <input type="number" id="dailyAmount" class="glass-input" placeholder="0.00">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Execution Time</label>
+                            <input type="time" id="execTime" class="glass-input" style="color-scheme: dark;">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Start Date</label>
+                            <input type="date" id="startDate" class="glass-input" style="color-scheme: dark;">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">End Date</label>
+                            <input type="date" id="endDate" class="glass-input" style="color-scheme: dark;">
+                        </div>
+                    </div>
+                `;
+            } else if (selectedCategory === "TARGET") {
+                html = `
+                    <div class="input-group" style="margin-bottom: 15px;">
+                        <label class="input-label">Target Milestone ($)</label>
+                        <input type="number" id="targetAmount" class="glass-input" placeholder="0.00" style="font-size: 1.5rem; padding: 15px;">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 15px;">
+                        <label class="input-label">Funding Strategy</label>
+                        <select id="fundingStyle" class="glass-input" onchange="toggleAutoSweep()">
+                            <option value="MANUAL">Normal (Fund savings manually)</option>
+                            <option value="AUTO">Automated Daily Sweep</option>
+                        </select>
+                    </div>
+                    <div id="autoSweepContainer" style="display: none; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px;">
+                        <div class="form-grid" style="margin: 0;">
+                            <div class="input-group">
+                                <label class="input-label">Daily ($)</label>
+                                <input type="number" id="targetDailyAmt" class="glass-input" placeholder="0.00">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Time</label>
+                                <input type="time" id="targetExecTime" class="glass-input" style="color-scheme: dark;">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (selectedCategory === "LOCKED") {
+                html = `
+                    <div class="input-group" style="margin-bottom: 15px;">
+                        <label class="input-label">Initial Lock Deposit ($)</label>
+                        <input type="number" id="lockedInitial" class="glass-input" placeholder="0.00" style="font-size: 1.5rem; padding: 15px;">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 15px;">
+                        <label class="input-label">Lock Duration Strategy</label>
+                        <select id="lockStrategy" class="glass-input" onchange="toggleLockDate()">
+                            <option value="OPEN">Open-Ended (Locked until manual request)</option>
+                            <option value="FIXED">Fixed Date (Unlocks automatically)</option>
+                        </select>
+                    </div>
+                    <div id="lockDateContainer" style="display: none; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px;">
+                        <div class="input-group" style="margin: 0;">
+                            <label class="input-label">Target Unlock Date</label>
+                            <input type="date" id="lockedEndDate" class="glass-input" style="color-scheme: dark;">
+                        </div>
+                    </div>
+                    <div class="input-group" style="margin-bottom: 15px;">
+                        <label class="input-label">Continuous Funding</label>
+                        <select id="fundingStyle" class="glass-input" onchange="toggleAutoSweep()">
+                            <option value="MANUAL">Normal (Initial lock only)</option>
+                            <option value="AUTO">Add Automated Daily Sweep</option>
+                        </select>
+                    </div>
+                    <div id="autoSweepContainer" style="display: none; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px;">
+                        <div class="form-grid" style="margin: 0;">
+                            <div class="input-group">
+                                <label class="input-label">Daily ($)</label>
+                                <input type="number" id="targetDailyAmt" class="glass-input" placeholder="0.00">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label">Time</label>
+                                <input type="time" id="targetExecTime" class="glass-input" style="color-scheme: dark;">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // Toggles the extra input fields if the user selects Daily Funding for Target/Locked plans
+        function toggleAutoSweep() {
+            let style = document.getElementById("fundingStyle").value;
+            document.getElementById("autoSweepContainer").style.display = (style === "AUTO") ? "block" : "none";
+        }
+
+        function toggleLockDate() {
+            let strategy = document.getElementById("lockStrategy").value;
+            document.getElementById("lockDateContainer").style.display = (strategy === "FIXED") ? "block" : "none";
+        }
+
+        // THE FIX: The Bulletproof Logical Form Validator
+        function validateConfiguration() {
+            let err = document.getElementById("configError");
+
+            if (selectedCategory === "DAILY") {
+                let sDate = document.getElementById("startDate").value;
+                let eDate = document.getElementById("endDate").value;
+                let dAmt = document.getElementById("dailyAmount").value;
+                if (!dAmt || dAmt <= 0 || !sDate || !eDate || !document.getElementById("execTime").value) {
+                    return err.innerText = "All daily parameters are required and amount must be greater than 0.", err.style.display="block";
+                }
+                // THE FIX: Strict Date Validation specifically addressing your issue
+                if (new Date(eDate) <= new Date(sDate)) {
+                    return err.innerText = "Chronological Error: End date must be strictly AFTER the start date.", err.style.display="block";
+                }
+            } else if (selectedCategory === "TARGET") {
+                if (!document.getElementById("targetAmount").value) return err.innerText = "Please enter a target amount.", err.style.display="block";
+                // THE FIX: Enforcing validation when users select AUTO Sweep on Target accounts!
+                if (document.getElementById("fundingStyle").value === "AUTO") {
+                    let tAmt = document.getElementById("targetDailyAmt").value;
+                    if (!tAmt || tAmt <= 0 || !document.getElementById("targetExecTime").value) {
+                        return err.innerText = "Please provide a valid Daily Amount and Time for the Automated Sweep.", err.style.display="block";
+                    }
+                }
+            } else if (selectedCategory === "LOCKED") {
+                if (!document.getElementById("lockedInitial").value) return err.innerText = "Please enter an initial locking amount.", err.style.display="block";
+                if (document.getElementById("lockStrategy").value === "FIXED" && !document.getElementById("lockedEndDate").value) {
+                    return err.innerText = "Please specify an unlock date.", err.style.display="block";
+                }
+                // THE FIX: Enforcing validation when users select AUTO Sweep on Locked accounts!
+                if (document.getElementById("fundingStyle").value === "AUTO") {
+                    let tAmt = document.getElementById("targetDailyAmt").value;
+                    if (!tAmt || tAmt <= 0 || !document.getElementById("targetExecTime").value) {
+                        return err.innerText = "Please provide a valid Daily Amount and Time for the Automated Sweep.", err.style.display="block";
+                    }
+                }
+            }
+
+            err.style.display = "none";
+            generateTerms(); // Create the contract
+            goToPhase(4);
+        }
+
+        // THE FIX: The Contextual Contract Generator [Analyzes the user's choices and writes specific T&C text]
+        function generateTerms() {
+            let termsBox = document.getElementById("savingsTermsBox");
+            let discHtml = "";
+            let catHtml = "";
+
+            if (selectedDiscipline === "STRICT") {
+                discHtml = `<p><strong style="color: #FF4D4F;">STRICT PROTOCOL:</strong> Funds deposited into this reserve are cryptographically locked. Early withdrawals are mathematically impossible. No exceptions.</p>`;
+            } else {
+                discHtml = `<p><strong style="color: #00ff88;">LENIENT PROTOCOL:</strong> Funds remain accessible. However, to cultivate financial discipline, any withdrawal request will trigger a mandatory <strong>12-hour algorithmic cooling-off period</strong> before funds are released to your primary balance.</p>`;
+            }
+
+            if (selectedCategory === "DAILY" || (document.getElementById("fundingStyle") && document.getElementById("fundingStyle").value === "AUTO")) {
+                catHtml = `<p><strong>Automated Sweep:</strong> Deductions will execute daily at your specified time. If your primary vault lacks sufficient liquidity, the system will elegantly skip the deduction without penalty.</p>`;
+            } else if (selectedCategory === "TARGET") {
+                catHtml = `<p><strong>Target Milestone:</strong> This portfolio is designed to assist you in reaching a specific mathematical goal. You may manually inject funds at any time using the 'Add Money' function.</p>`;
+            } else {
+                catHtml = `<p><strong>Fixed Lock:</strong> Your initial deposit will be transferred from your main vault and secured in this secondary reserve.</p>`;
+            }
+
+            termsBox.innerHTML = discHtml + catHtml + `<p><i>I acknowledge and agree to these parameters.</i></p>`;
+        }
+
+        // THE FIX: The Live API Pipeline to generate the portfolio and move funds
+        function executeSavingsPlan() {
+            let pin = document.getElementById("savingsPin").value;
+            if(!/^\d{4}$/.test(pin)) return showCustomAlert("Authentication Error", "Please enter a valid 4-digit PIN.");
+
+            // Constructing the default data payload
+            let payload = {
+                googleId: userId,
+                account: userAcc,
+                pin: pin,
+                planName: document.getElementById("planName").value,
+                category: selectedCategory,
+                discipline: selectedDiscipline,
+                initialDeposit: 0,
+                targetAmount: 0,
+                dailyAmount: 0,
+                execTime: "",
+                startDate: "",
+                endDate: ""
+            };
+
+            // Mapping the dynamic form inputs safely
+            if (selectedCategory === "DAILY") {
+                payload.dailyAmount = parseFloat(document.getElementById("dailyAmount").value) || 0;
+                payload.execTime = document.getElementById("execTime").value;
+                payload.startDate = document.getElementById("startDate").value;
+                payload.endDate = document.getElementById("endDate").value;
+            } else if (selectedCategory === "TARGET") {
+                payload.targetAmount = parseFloat(document.getElementById("targetAmount").value) || 0;
+                if (document.getElementById("fundingStyle").value === "AUTO") {
+                    payload.dailyAmount = parseFloat(document.getElementById("targetDailyAmt").value) || 0;
+                    payload.execTime = document.getElementById("targetExecTime").value;
+                }
+            } else if (selectedCategory === "LOCKED") {
+                payload.initialDeposit = parseFloat(document.getElementById("lockedInitial").value) || 0;
+                if (document.getElementById("lockStrategy").value === "FIXED") {
+                    payload.endDate = document.getElementById("lockedEndDate").value;
+                }
+                if (document.getElementById("fundingStyle").value === "AUTO") {
+                    payload.dailyAmount = parseFloat(document.getElementById("targetDailyAmt").value) || 0;
+                    payload.execTime = document.getElementById("targetExecTime").value;
+                }
+            }
+
+            // Transmitting the legal contract to the Java Vault
+            fetch("http://206.189.113.64:8080/api/create-savings", {
+                method: "POST", headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            }).then(res => {
+                if(!res.ok) return res.text().then(err => { throw new Error(err); });
+                window.location.reload(); // Instantly refresh the page to view the new active portfolio
+            }).catch(err => {
+                document.getElementById('savingsWizardModal').style.display = 'none';
+                showCustomAlert("Transaction Denied", err.message);
+            });
+        }
+
+        let activeManageId = null;
+
+        // THE FIX: The Contextual UI Controller for the Modal
+        function openManageModal(id, name, discipline, category, isGoalMet, balance) {
+            activeManageId = id;
+            document.getElementById("managePlanName").innerText = name;
+            
+            let ruleText = discipline === "STRICT" 
+                ? "STRICT: Funds are mathematically locked until target completion." 
+                : "LENIENT: Early withdrawals trigger a 12-hour system delay.";
+                
+            // If the goal is met, completely re-sculpt the modal to ONLY allow full withdrawal!
+            if (isGoalMet) {
+                document.getElementById("managePlanRules").innerText = "SUCCESS: Your target milestone has been achieved. You may now withdraw your funds.";
+                document.getElementById("fundSection").style.display = "none";
+                document.getElementById("withdrawTitle").innerText = "Withdraw Full Balance (" + new Intl.NumberFormat('en-US', {style:'currency', currency:'USD'}).format(balance) + ")";
+                document.getElementById("withdrawAmount").style.display = "none";
+                document.getElementById("withdrawAmount").value = balance; // Pre-fill invisibly for the backend
+                if(document.getElementById("editSection")) document.getElementById("editSection").style.display = "none"; // Hide edit if goal is met
+            } else {
+                document.getElementById("managePlanRules").innerText = ruleText;
+                document.getElementById("fundSection").style.display = "block";
+                document.getElementById("withdrawTitle").innerText = "Liquidate Funds";
+                if(document.getElementById("editSection")) document.getElementById("editSection").style.display = "block";
+                document.getElementById("withdrawAmount").style.display = "block";
+                document.getElementById("withdrawAmount").value = "";
+            }
+            
+            document.getElementById("manageSavingsModal").style.display = "flex";
+        }
+
+        // THE FIX: The Update Execution Engine for Automated Sweeps
+        function executeEditSweep() {
+            let amt = document.getElementById("editSweepAmt").value;
+            let time = document.getElementById("editSweepTime").value;
+            let errBox = document.getElementById("manageEditError");
+            errBox.style.display = "none";
+            
+            if(!amt || amt <= 0) return errBox.innerText = "Please enter a valid amount.", errBox.style.display="block";
+            if(!time) return errBox.innerText = "Please select a time.", errBox.style.display="block";
+
+            fetch("http://206.189.113.64:8080/api/edit-savings", {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ planId: activeManageId, dailyAmount: amt, execTime: time })
+            }).then(res => {
+                if(!res.ok) return res.text().then(err => { throw new Error(err); });
+                window.location.reload();
+            }).catch(err => { errBox.innerText = err.message; errBox.style.display="block"; });
+        }
+
+        function executeFunding() {
+            let amt = document.getElementById("fundAmount").value;
+            let pin = document.getElementById("fundPin").value;
+            let errBox = document.getElementById("manageFundError");
+            errBox.style.display = "none";
+            
+            if(!amt || amt <= 0) return errBox.innerText = "Please enter a valid amount.", errBox.style.display="block";
+            if(!/^\d{4}$/.test(pin)) return errBox.innerText = "Please enter your 4-digit PIN.", errBox.style.display="block";
+
+            fetch("http://206.189.113.64:8080/api/fund-savings", {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ googleId: userId, planId: activeManageId, amount: amt, pin: pin })
+            }).then(res => {
+                if(!res.ok) return res.text().then(err => { throw new Error(err); });
+                window.location.reload();
+            }).catch(err => {
+                errBox.innerText = err.message.replace("Vault Exception: ", ""); 
+                errBox.style.display="block";
+            });
+        }
+
+        function executeWithdrawal() {
+            let amt = document.getElementById("withdrawAmount").value;
+            let pin = document.getElementById("withdrawPin").value;
+            let errBox = document.getElementById("manageWithdrawError");
+            errBox.style.display = "none";
+            
+            if(!amt || amt <= 0) return errBox.innerText = "Please enter a valid amount.", errBox.style.display="block";
+            if(!/^\d{4}$/.test(pin)) return errBox.innerText = "Please enter your 4-digit PIN.", errBox.style.display="block";
+
+            fetch("http://206.189.113.64:8080/api/withdraw-savings", {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ googleId: userId, planId: activeManageId, amount: amt, pin: pin })
+            }).then(res => {
+                if(!res.ok) return res.text().then(err => { throw new Error(err); });
+                window.location.reload();
+            }).catch(err => {
+                errBox.innerText = err.message.replace("Vault Exception: ", ""); 
+                errBox.style.display="block";
+            });
+        }
+
+        let countdownInterval = null;
+
+        function startCountdownTimers() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            
+            countdownInterval = setInterval(() => {
+                document.querySelectorAll('.countdown-timer').forEach(el => {
+                    let timeLeft = parseInt(el.getAttribute('data-time'));
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        el.setAttribute('data-time', timeLeft);
+                        
+                        let h = Math.floor(timeLeft / 3600);
+                        let m = Math.floor((timeLeft % 3600) / 60);
+                        let s = timeLeft % 60;
+                        el.innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                    } else if (timeLeft === 0) {
+                        el.innerText = "00:00:00 - Unlocked";
+                        el.setAttribute('data-time', -1);
+                        setTimeout(() => window.location.reload(), 2000); // Reload to clear lock state visually
+                    }
+                });
+            }, 1000);
+        }
+
+        let pendingCancelId = null;
+        function triggerCancelWithdrawal(planId) {
+            pendingCancelId = planId;
+            document.getElementById('cancelWithdrawalModal').style.display = 'flex';
+        }
+
+        function proceedCancelWithdrawal() {
+            // THE FIX: Instantly hide the modal to prove to the user the button was clicked
+            document.getElementById('cancelWithdrawalModal').style.display = 'none';
+            
+            fetch("http://206.189.113.64:8080/api/cancel-withdrawal", {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ planId: pendingCancelId })
+            }).then(() => window.location.reload());
+        }
+
+        // THE FIX: The execution engine for the Zero-Balance Deletion protocol
+        function deletePortfolio(id) {
+            fetch("http://206.189.113.64:8080/api/delete-savings", {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ planId: id })
+            }).then(() => window.location.reload());
+        }
+
+        function performLogout() {
+            localStorage.removeItem("digitalBankId");
+            window.location.replace("./index.html");
+        }
+    </script>
+</body>
+</html>

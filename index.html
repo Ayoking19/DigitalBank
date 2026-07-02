@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigitalBank | Institutional Access</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body style="background-color: #121212; color: white; font-family: Arial, sans-serif; text-align: center; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+
+    <div class="glass-panel" id="loginCard">
+        <h1 style="margin-bottom: 5px; font-size: 2.2rem; margin-top: 0;">DigitalBank</h1>
+        <p style="margin-bottom: 35px; font-size: 0.95rem;">Secure Institutional Access.</p>
+
+        <div id="g_id_onload" data-client_id="983715185680-0tv318044796ue5vd9frabet52gg443o.apps.googleusercontent.com" data-context="signin" data-callback="handleGoogleLogin"></div>
+        <div class="google-btn-wrapper">
+            <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="outline" data-text="continue_with" data-size="large" data-logo_alignment="center"></div>
+        </div>
+
+        <p style="font-size: 0.75rem; color: #64748B; margin-top: 10px; line-height: 1.5;">
+            By continuing, you agree to our <br>
+            <a href="#" style="color: #94A3B8; text-decoration: none;">Terms of Service</a> & <a href="#" style="color: #94A3B8; text-decoration: none;">Privacy Policy</a>.
+        </p>
+    </div>
+
+    <div id="onboardingModal" class="modal-overlay">
+        <div class="glass-panel" style="max-width: 600px; width: 90%;">
+            
+            <h2 style="margin-top: 0;">Account Origination</h2>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+
+            <div id="step0" class="wizard-step active">
+                <p style="text-align: left; margin-bottom: 20px; color: var(--accent-gold);">Step 0: Legal Agreements</p>
+                <div class="terms-box">
+                    <strong>DigitalBank Master Services Agreement</strong><br><br>
+                    1. <strong>Acceptance of Terms:</strong> By accessing or using DigitalBank's institutional services, you agree to be bound by these Terms of Service and our Privacy Policy.<br><br>
+                    2. <strong>Identity Verification (KYC):</strong> You consent to provide accurate, current, and complete information as required by global Anti-Money Laundering (AML) regulations.<br><br>
+                    3. <strong>Fund Origination:</strong> You certify that all initial deposits and subsequent transfers are derived from legitimate, legal sources.<br><br>
+                    4. <strong>Security Responsibilities:</strong> You are strictly liable for maintaining the confidentiality of your 10-digit Account Number and 4-digit PIN. DigitalBank is not liable for unauthorized access resulting from user negligence.<br><br>
+                    5. <strong>Account Termination:</strong> We reserve the right to freeze or terminate access to the vault immediately upon suspicion of fraudulent or unauthorized activity.
+                </div>
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="document.getElementById('onboardingModal').style.display='none'">Decline & Exit</button>
+                    <button class="glass-btn" onclick="goToStep(1)">I Accept & Agree ↗</button>
+                </div>
+            </div>
+
+            <div id="step1" class="wizard-step">
+                <p style="text-align: left; margin-bottom: 20px; color: var(--accent-gold);">Step 1: Personal KYC</p>
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label class="input-label">Full Name</label>
+                        <input type="text" id="regName" class="glass-input" placeholder="John Doe">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Date of Birth</label>
+                        <input type="date" id="regDob" class="glass-input" style="color-scheme: dark;">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Email Address</label>
+                        <input type="email" id="regEmail" class="glass-input" placeholder="john@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Country Code & Phone</label>
+                        <div style="display: flex; gap: 5px;">
+                            <select id="regCode" class="glass-input" style="width: 35%; padding: 14px 5px;">
+                                <option value="+1">+1 (US)</option>
+                                <option value="+44">+44 (UK)</option>
+                                <option value="+234">+234 (NG)</option>
+                                <option value="+61">+61 (AU)</option>
+                            </select>
+                            <input type="tel" id="regPhone" class="glass-input" style="width: 65%;" placeholder="000 000 0000">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Country</label>
+                        <input type="text" id="regCountry" class="glass-input" placeholder="United States">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Residential Address</label>
+                        <input type="text" id="regAddress" class="glass-input" placeholder="123 Wall St, NY">
+                    </div>
+                </div>
+                <div id="step1Error" class="error-text" style="margin-top: 15px; margin-bottom: 15px;">All fields are required.</div>
+                <button class="glass-btn" onclick="validateStep1()">Proceed to Step 2 ↗</button>
+            </div>
+
+            <div id="step2" class="wizard-step">
+                <p style="text-align: left; margin-bottom: 20px; color: var(--accent-gold);">Step 2: Next of Kin Details</p>
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label class="input-label">Full Name</label>
+                        <input type="text" id="nokName" class="glass-input" placeholder="Jane Doe">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Date of Birth</label>
+                        <input type="date" id="nokDob" class="glass-input" style="color-scheme: dark;">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Phone Number</label>
+                        <input type="tel" id="nokPhone" class="glass-input" placeholder="+1 000 000 0000">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Home Address</label>
+                        <input type="text" id="nokAddress" class="glass-input" placeholder="456 Main St, NY">
+                    </div>
+                </div>
+                <div id="step2Error" class="error-text" style="margin-top: 15px; margin-bottom: 15px;">All fields are required.</div>
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="goToStep(1)">Back</button>
+                    <button class="glass-btn" onclick="validateStep2()">Proceed to Step 3 ↗</button>
+                </div>
+            </div>
+
+            <div id="step3" class="wizard-step">
+                <p style="text-align: left; margin-bottom: 20px; color: var(--accent-gold);">Step 3: Security & Credentials</p>
+                <div class="input-group" style="margin-bottom: 15px;">
+                    <label class="input-label">Your Unique 10-Digit Account Number</label>
+                    <input type="text" id="accountNumberDisplay" class="glass-input" readonly>
+                </div>
+                <button class="glass-btn secondary" style="margin-bottom: 25px; padding: 10px;" onclick="enableEdit()">Customize Account Number</button>
+                
+                <div class="input-group">
+                    <label class="input-label">Create 4-Digit Security PIN</label>
+                    <input type="password" id="pinInput" class="glass-input" maxlength="4" placeholder="••••">
+                </div>
+                <div id="step3Error" class="error-text">Account must be 10 digits. PIN must be 4 digits.</div>
+                
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="goToStep(2)">Back</button>
+                    <button class="glass-btn" onclick="validateSecurityStep()">Proceed to Step 4 ↗</button>
+                </div>
+            </div>
+
+            <div id="step4" class="wizard-step">
+                <p style="text-align: left; margin-bottom: 20px; color: var(--accent-gold);">Step 4: Initial Vault Funding</p>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 25px;">Please enter your initial deposit amount to activate the vault. (Range: $100 - $1,000,000)</p>
+                
+                <div class="input-group">
+                    <label class="input-label">Deposit Amount (USD)</label>
+                    <input type="number" id="depositAmount" class="glass-input" placeholder="50000.00" min="100" max="1000000">
+                </div>
+                
+                <div id="step4Error" class="error-text">Amount must be between $100 and $1,000,000.</div>
+                
+                <div id="globalError" class="error-text" style="text-align: center;"></div>
+                
+                <div class="btn-container">
+                    <button class="glass-btn secondary" onclick="goToStep(3)">Back</button>
+                    <button class="glass-btn" onclick="finalizeOrigination()">Launch Vault ↗</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // THE FIX: The State Machine. Keeps track of our 4 steps.
+        let currentStep = 1;
+
+        // THE FIX: The Step 1 Validation Gate
+        function validateStep1() {
+            let name = document.getElementById("regName").value.trim();
+            let dob = document.getElementById("regDob").value.trim();
+            let email = document.getElementById("regEmail").value.trim();
+            let phone = document.getElementById("regPhone").value.trim();
+            let country = document.getElementById("regCountry").value.trim();
+            let address = document.getElementById("regAddress").value.trim();
+            
+            let err = document.getElementById("step1Error");
+            if (!name || !dob || !email || !phone || !country || !address) {
+                err.style.display = "block";
+                return;
+            }
+            err.style.display = "none";
+            goToStep(2);
+        }
+
+        // THE FIX: The Step 2 Validation Gate
+        function validateStep2() {
+            let nName = document.getElementById("nokName").value.trim();
+            let nDob = document.getElementById("nokDob").value.trim();
+            let nPhone = document.getElementById("nokPhone").value.trim();
+            let nAddress = document.getElementById("nokAddress").value.trim();
+            
+            let err = document.getElementById("step2Error");
+            if (!nName || !nDob || !nPhone || !nAddress) {
+                err.style.display = "block";
+                return;
+            }
+            err.style.display = "none";
+            goToStep(3);
+        }
+
+        function goToStep(stepNumber) {
+            // Hide all steps
+            document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active'));
+            // Hide all errors
+            document.querySelectorAll('.error-text').forEach(el => el.style.display = 'none');
+            
+            // Show the target step
+            document.getElementById(`step${stepNumber}`).classList.add('active');
+            currentStep = stepNumber;
+            
+            // THE FIX: Updating the progress bar mathematically. Step 0 is 5%, Step 4 is 100%.
+            let progress = stepNumber === 0 ? 5 : (stepNumber / 4) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+        }
+
+        // Standard Google Auth Login
+        function handleGoogleLogin(response) {
+            const visitorBadge = response.credential;
+            fetch("http://206.189.113.64:8080/api/auth", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: visitorBadge })
+            })
+            .then(res => res.json())
+            .then(data => {
+                localStorage.setItem("digitalBankId", data.googleId.trim());
+                if (data.status === "existing_user") {
+                    window.location.replace("./home.html");
+                } else {
+                    document.getElementById("onboardingModal").style.display = "flex";
+                    let randomAcc = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+                    document.getElementById("accountNumberDisplay").value = randomAcc;
+                    goToStep(0); // THE FIX: Force the user to read and accept the T&C first
+                }
+            })
+            .catch(error => console.error("Auth failed:", error));
+        }
+
+        function enableEdit() {
+            let accInput = document.getElementById("accountNumberDisplay");
+            accInput.removeAttribute("readonly");
+            accInput.focus();
+            accInput.style.border = "1px solid var(--accent-gold)"; 
+            accInput.style.background = "rgba(0,0,0,0.6)";
+            accInput.style.color = "white";
+        }
+
+        // Validating Step 3 before allowing them to go to the Funding Step
+        function validateSecurityStep() {
+            let finalAccount = document.getElementById("accountNumberDisplay").value;
+            let finalPin = document.getElementById("pinInput").value;
+            
+            if (!/^\d{10}$/.test(finalAccount) || !/^\d{4}$/.test(finalPin)) {
+                document.getElementById("step3Error").style.display = "block";
+                return;
+            }
+            goToStep(4);
+        }
+
+        // THE FIX: The Massive Payload Compiler
+        function finalizeOrigination() {
+            let deposit = parseFloat(document.getElementById("depositAmount").value);
+            let errorDiv = document.getElementById("step4Error");
+            let globalError = document.getElementById("globalError");
+            
+            errorDiv.style.display = "none";
+            globalError.style.display = "none";
+
+            // Strict range validation constraint requested by user
+            if (isNaN(deposit) || deposit < 100 || deposit > 1000000) {
+                errorDiv.style.display = "block";
+                return;
+            }
+
+            // Compiling EVERY piece of data from the 4 steps into one massive JSON package
+            let accountData = {
+                googleId: localStorage.getItem("digitalBankId"),
+                accountNumber: document.getElementById("accountNumberDisplay").value,
+                pin: document.getElementById("pinInput").value,
+                initialDeposit: deposit,
+                
+                // Step 1 Data
+                fullName: document.getElementById("regName").value,
+                dob: document.getElementById("regDob").value,
+                email: document.getElementById("regEmail").value,
+                phone: document.getElementById("regCode").value + " " + document.getElementById("regPhone").value,
+                country: document.getElementById("regCountry").value,
+                address: document.getElementById("regAddress").value,
+                
+                // Step 2 Data
+                nokName: document.getElementById("nokName").value,
+                nokDob: document.getElementById("nokDob").value,
+                nokPhone: document.getElementById("nokPhone").value,
+                nokAddress: document.getElementById("nokAddress").value
+            };
+
+            // We will point this to our updated Java endpoint in the next step
+            fetch("http://206.189.113.64:8080/api/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(accountData)
+            })
+            .then(response => {
+                if (!response.ok) return response.text().then(err => { throw new Error(err); });
+                return response.text();
+            })
+            .then(serverMessage => {
+                window.location.replace("./home.html");
+            })
+            .catch(error => {
+                globalError.innerText = error.message;
+                globalError.style.display = "block";
+            });
+        }
+    </script>
+</body>
+</html>
