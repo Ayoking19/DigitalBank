@@ -129,9 +129,6 @@ public class BankServer {
         public void handle(HttpExchange exchange) throws IOException {
             
             // Opening the window for CORS
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
 
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
@@ -192,8 +189,6 @@ public class BankServer {
         public void handle(HttpExchange exchange) throws IOException {
             
             // Opening the window for CORS
-            
-
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
                 return;
