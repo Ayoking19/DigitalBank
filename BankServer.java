@@ -45,7 +45,11 @@ public class BankServer {
         server.createContext("/api/fund-savings", new FundSavingsHandler());
         server.createContext("/api/withdraw-savings", new WithdrawSavingsHandler());
         server.createContext("/api/cancel-withdrawal", new CancelWithdrawalHandler()); 
-        server.createContext("/api/delete-savings", new DeleteSavingsHandler()); 
+        server.createContext("/api/delete-savings", new DeleteSavingsHandler());
+        // THE FIX: Registering the missing Edit Sweep endpoint that was causing the 404.
+        // Without this line, the Java server has no routing entry for this URL and
+        // returns "No context found for request" for every call savings.html makes to it.
+        server.createContext("/api/edit-savings", new EditSavingsHandler());
         
         // THE FIX: The Profile & Configuration Pipeline
         server.createContext("/api/full-profile", new FullProfileHandler());
@@ -69,7 +73,12 @@ public class BankServer {
             try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN weekly_limit REAL DEFAULT 0"); } catch(Exception ignore) {}
             try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN monthly_limit REAL DEFAULT 0"); } catch(Exception ignore) {}
             try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN limit_unlock_time TEXT"); } catch(Exception ignore) {}
-        } catch(Exception e) {} 
+            // THE FIX: Adds the last_swept_date column to the Savings table. This records
+            // the calendar date of the most recent successful sweep for each plan, which
+            // the new cron engine uses to prevent double-sweeping and to catch up if the
+            // server drifted past the exact scheduled minute.
+            try { c.createStatement().execute("ALTER TABLE Savings ADD COLUMN last_swept_date TEXT"); } catch(Exception ignore) {}
+        } catch(Exception e) {}
         
         System.out.println("Security Guard is awake. Server listening on port 8080...");
         
@@ -87,8 +96,17 @@ public class BankServer {
 
                     // 2. Find active portfolios with AUTO funding
                     
-                    // Find active portfolios with AUTO funding whose scheduled time matches the current HH:MM
-                    String sweepSql = "SELECT id, account_number, plan_name, daily_amount FROM Savings WHERE status = 'ACTIVE' AND daily_amount > 0 AND exec_time = strftime('%H:%M', 'now', 'localtime')";
+                    // THE FIX: Replaced the fragile exact-match (exec_time = 'HH:MM') with a
+                    // two-part guard that is immune to Thread.sleep drift:
+                    //   Part A: exec_time <= current_time  → "has the scheduled moment arrived yet today?"
+                    //   Part B: last_swept_date < today    → "has this plan NOT already fired today?"
+                    // Together these mean: fire once, as soon as the time has passed, on each calendar day.
+                    // If the thread oversleeps and wakes 5 minutes late, Part A still catches it.
+                    // If somehow the thread runs twice in the same minute, Part B blocks the second run.
+                    String sweepSql = "SELECT id, account_number, plan_name, daily_amount FROM Savings " +
+                        "WHERE status = 'ACTIVE' AND daily_amount > 0 " +
+                        "AND exec_time <= strftime('%H:%M', 'now', 'localtime') " +
+                        "AND (last_swept_date IS NULL OR last_swept_date < date('now', 'localtime'))";
                     java.sql.ResultSet rs = conn.createStatement().executeQuery(sweepSql);
                     
                     while (rs.next()) {
@@ -107,6 +125,13 @@ public class BankServer {
                             conn.prepareStatement("UPDATE Users SET balance = balance - " + amt + " WHERE account_number = '" + acc + "'").executeUpdate();
                             conn.prepareStatement("UPDATE Savings SET current_balance = current_balance + " + amt + " WHERE id = " + planId).executeUpdate();
                             
+                            // THE FIX: Stamp today's date on the plan immediately after a successful
+                            // sweep. date('now', 'localtime') [a SQLite function returning today's
+                            // calendar date in 'YYYY-MM-DD' format adjusted to the server's local
+                            // timezone] is what the WHERE clause above compares against, so this
+                            // stamp is what prevents a second sweep from firing on the same day.
+                            conn.prepareStatement("UPDATE Savings SET last_swept_date = date('now', 'localtime') WHERE id = " + planId).executeUpdate();
+
                             // Log the automated transaction
                             java.sql.PreparedStatement txStmt = conn.prepareStatement("INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, ?, ?, 'Automated Daily Sweep', datetime('now'))");
                             txStmt.setString(1, acc);
@@ -1787,6 +1812,54 @@ public class BankServer {
                 exchange.sendResponseHeaders(200, ok.length()); exchange.getResponseBody().write(ok.getBytes()); exchange.getResponseBody().close();
             } catch (Exception e) { 
                 String err = e.getMessage(); exchange.sendResponseHeaders(500, err.length()); exchange.getResponseBody().write(err.getBytes()); exchange.getResponseBody().close(); 
+            }
+        }
+    }
+
+    // THE FIX: The missing Edit Savings Sweep Handler. Allows the user to update the
+    // daily sweep amount and scheduled execution time for an existing savings plan.
+    // last_swept_date is reset to NULL so the new time can fire correctly on the same
+    // day — if the user moves their sweep from 09:00 to 15:00 after 09:00 already
+    // fired, clearing last_swept_date lets the 15:00 trigger work today.
+    static class EditSavingsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
+
+            try {
+                String requestBody = new String(exchange.getRequestBody().readAllBytes());
+                // THE FIX: Parsing the three fields savings.html sends:
+                // planId (which plan to update), dailyAmount (new sweep amount),
+                // execTime (new HH:MM schedule string e.g. "14:30")
+                int planId = Integer.parseInt(requestBody.split("\"planId\":")[1].split(",")[0].replaceAll("[^\\d]", ""));
+                double dailyAmount = Double.parseDouble(requestBody.split("\"dailyAmount\":")[1].split(",")[0].replaceAll("[^\\d.]", ""));
+                String execTime = requestBody.split("\"execTime\":\"")[1].split("\"")[0];
+
+                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                    // THE FIX: A PreparedStatement [a precompiled SQL template where ? placeholders
+                    // are filled safely by Java, preventing SQL injection attacks] updates both
+                    // the daily_amount and exec_time columns, and clears last_swept_date so the
+                    // new schedule can fire today if the new time hasn't passed yet.
+                    String sql = "UPDATE Savings SET daily_amount = ?, exec_time = ?, last_swept_date = NULL WHERE id = ?";
+                    java.sql.PreparedStatement stmt = conn.prepareStatement(sql);
+                    stmt.setDouble(1, dailyAmount);
+                    stmt.setString(2, execTime);
+                    stmt.setInt(3, planId);
+                    stmt.executeUpdate();
+                }
+
+                String ok = "Sweep Updated";
+                exchange.sendResponseHeaders(200, ok.length());
+                exchange.getResponseBody().write(ok.getBytes());
+                exchange.getResponseBody().close();
+            } catch (Exception e) {
+                String err = "Vault Exception: " + e.getMessage();
+                exchange.sendResponseHeaders(500, err.length());
+                exchange.getResponseBody().write(err.getBytes());
+                exchange.getResponseBody().close();
             }
         }
     }

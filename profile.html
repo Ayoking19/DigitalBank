@@ -138,7 +138,7 @@
     <!-- THE FIX: The Dual-Button Architecture for Transfer Limits -->
     <div id="limitModal" class="modal-overlay" style="z-index: 2000;">
         <div class="glass-panel" style="width: 380px;">
-            <h2 style="color: white; margin-top: 0;">Transfer Limit Matrix</h2>
+            <h2 style="color: white; margin-top: 0;">Transfer Limit</h2>
             
             <div id="activeLimitDisplay" style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px; font-size: 0.85rem; color: var(--text-secondary); text-align: left;">
                 Fetching configuration...
@@ -165,7 +165,7 @@
                 <button class="glass-btn" onclick="executeSettingsChange('limit')">Authorize Limit</button>
             </div>
             
-            <button class="glass-btn secondary" style="margin-top: 10px;" onclick="closeModal('limitModal')">Cancel / Back</button>
+            <button class="glass-btn secondary" style="margin-top: 10px;" onclick="closeModal('limitModal')">Cancel</button>
         </div>
     </div>
 
@@ -187,7 +187,7 @@
             <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 25px;">Do you really want to securely log out of your vault?</p>
             <div style="display: flex; gap: 10px;">
                 <button class="glass-btn secondary" onclick="closeModal('logoutModal')">Cancel</button>
-                <button class="glass-btn" style="background: #FF4D4F; color: white;" onclick="performLogout()">Yes, Log Out</button>
+                <button class="glass-btn" style="background: #FF4D4F; color: white;" onclick="performLogout()">Log Out</button>
             </div>
         </div>
     </div>
