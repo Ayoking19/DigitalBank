@@ -213,7 +213,7 @@
         // Standard Google Auth Login
         function handleGoogleLogin(response) {
             const visitorBadge = response.credential;
-            fetch("http://206.189.113.64:8080/api/auth", {
+            fetch("https://digitalbank.duckdns.org/api/auth", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token: visitorBadge })
@@ -292,7 +292,7 @@
             };
 
             // We will point this to our updated Java endpoint in the next step
-            fetch("http://206.189.113.64:8080/api/register", {
+            fetch("https://digitalbank.duckdns.org/api/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(accountData)

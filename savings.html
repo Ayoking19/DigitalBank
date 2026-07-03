@@ -235,7 +235,7 @@
             if (!userId) window.location.assign("./index.html");
             
             // 1. Initial Authentication & Account Retrieval
-            fetch("http://206.189.113.64:8080/api/user", {
+            fetch("https://digitalbank.duckdns.org/api/user", {
                 method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ googleId: userId })
             }).then(res => res.json()).then(data => {
                 userAcc = data.accountNumber;
@@ -245,7 +245,7 @@
 
         // THE FIX: Hydrating the active portfolios onto the dashboard
         function loadSavingsPortfolios(acc) {
-            fetch("http://206.189.113.64:8080/api/get-savings", {
+            fetch("https://digitalbank.duckdns.org/api/get-savings", {
                 method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ account: acc })
             }).then(res => res.json()).then(plans => {
                 let ledger = document.getElementById("activeSavingsLedger");
@@ -592,7 +592,7 @@
             }
 
             // Transmitting the legal contract to the Java Vault
-            fetch("http://206.189.113.64:8080/api/create-savings", {
+            fetch("https://digitalbank.duckdns.org/api/create-savings", {
                 method: "POST", headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(payload)
             }).then(res => {
@@ -645,7 +645,7 @@
             if(!amt || amt <= 0) return errBox.innerText = "Please enter a valid amount.", errBox.style.display="block";
             if(!time) return errBox.innerText = "Please select a time.", errBox.style.display="block";
 
-            fetch("http://206.189.113.64:8080/api/edit-savings", {
+            fetch("https://digitalbank.duckdns.org/api/edit-savings", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({ planId: activeManageId, dailyAmount: amt, execTime: time })
             }).then(res => {
@@ -663,7 +663,7 @@
             if(!amt || amt <= 0) return errBox.innerText = "Please enter a valid amount.", errBox.style.display="block";
             if(!/^\d{4}$/.test(pin)) return errBox.innerText = "Please enter your 4-digit PIN.", errBox.style.display="block";
 
-            fetch("http://206.189.113.64:8080/api/fund-savings", {
+            fetch("https://digitalbank.duckdns.org/api/fund-savings", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({ googleId: userId, planId: activeManageId, amount: amt, pin: pin })
             }).then(res => {
@@ -684,7 +684,7 @@
             if(!amt || amt <= 0) return errBox.innerText = "Please enter a valid amount.", errBox.style.display="block";
             if(!/^\d{4}$/.test(pin)) return errBox.innerText = "Please enter your 4-digit PIN.", errBox.style.display="block";
 
-            fetch("http://206.189.113.64:8080/api/withdraw-savings", {
+            fetch("https://digitalbank.duckdns.org/api/withdraw-savings", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({ googleId: userId, planId: activeManageId, amount: amt, pin: pin })
             }).then(res => {
@@ -731,7 +731,7 @@
             // THE FIX: Instantly hide the modal to prove to the user the button was clicked
             document.getElementById('cancelWithdrawalModal').style.display = 'none';
             
-            fetch("http://206.189.113.64:8080/api/cancel-withdrawal", {
+            fetch("https://digitalbank.duckdns.org/api/cancel-withdrawal", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({ planId: pendingCancelId })
             }).then(() => window.location.reload());
@@ -739,7 +739,7 @@
 
         // THE FIX: The execution engine for the Zero-Balance Deletion protocol
         function deletePortfolio(id) {
-            fetch("http://206.189.113.64:8080/api/delete-savings", {
+            fetch("https://digitalbank.duckdns.org/api/delete-savings", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({ planId: id })
             }).then(() => window.location.reload());

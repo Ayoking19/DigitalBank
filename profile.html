@@ -230,7 +230,7 @@
             if (!userId) window.location.assign("./index.html");
 
             // Hydrate the KYC Profile
-            fetch("http://206.189.113.64:8080/api/full-profile", {
+            fetch("https://digitalbank.duckdns.org/api/full-profile", {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ googleId: userId })
             }).then(res => res.json()).then(data => {
@@ -387,7 +387,7 @@
                 nokAddress: document.getElementById("nokAddress").value
             };
 
-            fetch("http://206.189.113.64:8080/api/update-profile", {
+            fetch("https://digitalbank.duckdns.org/api/update-profile", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify(payload)
             }).then(res => {
@@ -450,7 +450,7 @@
                 endpoint = "/api/settings/account";
             }
 
-            fetch("http://206.189.113.64:8080" + endpoint, {
+            fetch("https://digitalbank.duckdns.org" + endpoint, {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify(payload)
             }).then(res => {

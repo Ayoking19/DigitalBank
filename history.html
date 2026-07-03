@@ -92,7 +92,7 @@
             if (!userId) window.location.assign("./index.html");
 
             // 1. Fetch the user's account number first
-            fetch("http://206.189.113.64:8080/api/user", {
+            fetch("https://digitalbank.duckdns.org/api/user", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ googleId: userId })
@@ -115,7 +115,7 @@
         let masterLedger = []; 
 
         function loadFullHistory(googleId, myAccountNumber) {
-            fetch("http://206.189.113.64:8080/api/transactions", {
+            fetch("https://digitalbank.duckdns.org/api/transactions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ googleId: googleId })
@@ -266,7 +266,7 @@
             
             // 1. Fetch KYC Data
             let userId = localStorage.getItem("digitalBankId");
-            let kyc = await fetch("http://206.189.113.64:8080/api/full-profile", {
+            let kyc = await fetch("https://digitalbank.duckdns.org/api/full-profile", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({googleId: userId})
             }).then(res => res.json());

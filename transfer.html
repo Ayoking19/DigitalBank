@@ -186,7 +186,7 @@
                 sessionStorage.removeItem("frozenReceipt"); 
             }
 
-            fetch("http://206.189.113.64:8080/api/user", {
+            fetch("https://digitalbank.duckdns.org/api/user", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ googleId: userId })
@@ -221,7 +221,7 @@
             renderBeneficiarySlider(globalBeneficiaries); // Instantly draw the new cards
 
             // 2. BACKGROUND SYNC: Silently tell Java to update the SQLite database
-            fetch("http://206.189.113.64:8080/api/manage-beneficiary", {
+            fetch("https://digitalbank.duckdns.org/api/manage-beneficiary", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -242,7 +242,7 @@
 
         // THE FIX: The Dynamic Recent Transfers Engine
         function loadRecentTransfers(googleId, myAcc) {
-            fetch("http://206.189.113.64:8080/api/transactions", {
+            fetch("https://digitalbank.duckdns.org/api/transactions", {
                 method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ googleId: googleId })
             })
             .then(res => res.json())
@@ -267,7 +267,7 @@
 
                 // Slice to the top 5 most recent, and fire a rapid lookup to get their real names and avatars
                 uniqueAccs.slice(0, 5).forEach(acc => {
-                    fetch("http://206.189.113.64:8080/api/lookup", {
+                    fetch("https://digitalbank.duckdns.org/api/lookup", {
                         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ account: acc })
                     })
                     .then(res => res.json())
@@ -308,7 +308,7 @@
 
         // THE FIX: The Dynamic Beneficiary Fetcher (Now securely pushing to the Render Engine)
         function loadBeneficiaries(googleId) {
-            fetch("http://206.189.113.64:8080/api/beneficiaries", {
+            fetch("https://digitalbank.duckdns.org/api/beneficiaries", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ googleId: googleId })
@@ -331,7 +331,7 @@
                 resultBox.innerHTML = `<div style="color: #64748B; font-size: 0.85rem; padding: 15px; border: 1px solid var(--border-micro); border-radius: 8px; background: rgba(255,255,255,0.03);">Scanning Vault...</div>`;
                 
                 // Transmitting the 10 digits to Java for verification
-                fetch("http://206.189.113.64:8080/api/lookup", {
+                fetch("https://digitalbank.duckdns.org/api/lookup", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ account: input })
@@ -454,7 +454,7 @@
             };
 
             // Transmitting the payload to the local Vault
-            fetch("http://206.189.113.64:8080/api/transfer", {
+            fetch("https://digitalbank.duckdns.org/api/transfer", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(transferData)

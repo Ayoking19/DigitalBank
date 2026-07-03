@@ -278,7 +278,7 @@
         document.addEventListener("DOMContentLoaded", () => {
             if (!userId) window.location.assign("./index.html");
 
-            fetch("http://206.189.113.64:8080/api/user", {
+            fetch("https://digitalbank.duckdns.org/api/user", {
                 method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ googleId: userId })
             }).then(res => res.json()).then(data => {
                 userAcc = data.accountNumber;
@@ -294,7 +294,7 @@
 
         // The State Hydration Engine
         function checkLoanStatus(acc) {
-            fetch("http://206.189.113.64:8080/api/loan-status", {
+            fetch("https://digitalbank.duckdns.org/api/loan-status", {
                 method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({account: acc})
             }).then(res => res.json()).then(data => {
                 if(data.hasLoan) {
@@ -326,7 +326,7 @@
 
         // THE FIX: The Bulletproof 10% Limit Calculator
         function calculateLoanLimit(acc) {
-            fetch("http://206.189.113.64:8080/api/transactions", {
+            fetch("https://digitalbank.duckdns.org/api/transactions", {
                 method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ googleId: userId })
             }).then(res => res.json()).then(transactions => {
                 let totalSpent = 0;
@@ -361,7 +361,7 @@
         
         // Credit History Ledger 
         function loadLoanHistory(googleId, acc) {
-            fetch("http://206.189.113.64:8080/api/transactions", {
+            fetch("https://digitalbank.duckdns.org/api/transactions", {
                 method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ googleId: googleId })
             }).then(res => res.json()).then(txs => {
                 let ledger = document.getElementById("loanHistoryLedger");
@@ -506,7 +506,7 @@
             let splits = (type === "once") ? 1 : (selectedDays / 30);
             let instAmt = totalOwed / splits;
 
-            fetch("http://206.189.113.64:8080/api/take-loan", {
+            fetch("https://digitalbank.duckdns.org/api/take-loan", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({ 
                     googleId: userId, account: userAcc, principal: selectedPrincipal, 
@@ -532,7 +532,7 @@
             if(!/^\d{4}$/.test(pin)) return errBox.innerText = "Enter 4-digit PIN.", errBox.style.display="block";
             errBox.style.display = "none";
             
-            fetch("http://206.189.113.64:8080/api/repay-loan", {
+            fetch("https://digitalbank.duckdns.org/api/repay-loan", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({ googleId: userId, account: userAcc, amount: amt, pin: pin })
             }).then(res => {

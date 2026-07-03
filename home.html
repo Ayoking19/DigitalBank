@@ -230,7 +230,7 @@
             }
 
             // 1. Fetching your Balance from the Java Vault
-            fetch("http://206.189.113.64:8080/api/user", {
+            fetch("https://digitalbank.duckdns.org/api/user", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ googleId: userId })
@@ -281,7 +281,7 @@
         
         // 3. The Dynamic Ledger Engine
         function loadTransactionHistory(googleId, myAccountNumber) {
-            fetch("http://206.189.113.64:8080/api/transactions", {
+            fetch("https://digitalbank.duckdns.org/api/transactions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ googleId: googleId })
@@ -387,7 +387,7 @@
                 senderPin: pin
             };
 
-            fetch("http://206.189.113.64:8080/api/transfer", {
+            fetch("https://digitalbank.duckdns.org/api/transfer", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(transferData)
@@ -457,7 +457,7 @@
             if (amount <= 0 || amount === "") return errBox.innerText = "Enter valid amount.", errBox.style.display = "block";
             if (!/^\d{4}$/.test(pin)) return errBox.innerText = "Enter 4-digit PIN.", errBox.style.display = "block";
 
-            fetch("http://206.189.113.64:8080/api/add-money", {
+            fetch("https://digitalbank.duckdns.org/api/add-money", {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ googleId: userId, amount: amount, pin: pin })
             })
