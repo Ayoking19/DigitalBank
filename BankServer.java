@@ -192,9 +192,7 @@ public class BankServer {
         public void handle(HttpExchange exchange) throws IOException {
             
             // Opening the window for CORS
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
 
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
@@ -298,9 +296,7 @@ public class BankServer {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
 
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
@@ -364,9 +360,7 @@ public class BankServer {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
 
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
@@ -553,9 +547,7 @@ public class BankServer {
         public void handle(HttpExchange exchange) throws IOException {
             
             // Opening the window for CORS [Cross-Origin Resource Sharing: A mandatory security protocol that explicitly grants a web browser permission to load data from a backend server operating on a different port]
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
 
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
@@ -654,9 +646,7 @@ public class BankServer {
         public void handle(HttpExchange exchange) throws IOException {
             
             // Opening the window for CORS
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
 
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
@@ -734,9 +724,7 @@ public class BankServer {
     static class LookupHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
 
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
@@ -790,9 +778,7 @@ public class BankServer {
     static class ManageBeneficiaryHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
 
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
@@ -863,9 +849,7 @@ public class BankServer {
     static class LoanStatusHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type"); // THE FIX: Browser Security Pass
+             // THE FIX: Browser Security Pass
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             String requestBody = new String(exchange.getRequestBody().readAllBytes());
@@ -917,9 +901,7 @@ public class BankServer {
     static class TakeLoanHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type"); // THE FIX: Browser Security Pass
+             // THE FIX: Browser Security Pass
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             String requestBody = new String(exchange.getRequestBody().readAllBytes());
@@ -1001,9 +983,7 @@ public class BankServer {
     static class RepayLoanHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type"); // THE FIX: Browser Security Pass
+             // THE FIX: Browser Security Pass
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             String requestBody = new String(exchange.getRequestBody().readAllBytes());
@@ -1144,9 +1124,7 @@ public class BankServer {
     static class AddMoneyHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             try {
@@ -1217,9 +1195,7 @@ public class BankServer {
     static class GetSavingsHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             try {
@@ -1279,9 +1255,7 @@ public class BankServer {
     static class CreateSavingsHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             try {
@@ -1368,9 +1342,7 @@ public class BankServer {
     static class FundSavingsHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             try {
@@ -1446,9 +1418,7 @@ public class BankServer {
     static class WithdrawSavingsHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             try {
@@ -1562,9 +1532,7 @@ public class BankServer {
     static class CancelWithdrawalHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             try {
@@ -1591,9 +1559,7 @@ public class BankServer {
     static class DeleteSavingsHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             try {
@@ -1621,9 +1587,7 @@ public class BankServer {
     static class FullProfileHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type"); // THE FIX: Security Passport
+             // THE FIX: Security Passport
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             try {
@@ -1676,9 +1640,7 @@ public class BankServer {
     static class UpdateProfileHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type"); // THE FIX: Security Passport
+             // THE FIX: Security Passport
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             try {
@@ -1714,9 +1676,7 @@ public class BankServer {
     static class ChangePinHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type"); // THE FIX: Security Passport
+             // THE FIX: Security Passport
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             try {
@@ -1748,9 +1708,7 @@ public class BankServer {
     static class ChangeLimitHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type"); // THE FIX: Security Passport
+             // THE FIX: Security Passport
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             try {
@@ -1795,9 +1753,7 @@ public class BankServer {
     static class ChangeAccountHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type"); // THE FIX: Security Passport
+             // THE FIX: Security Passport
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 
             try {
