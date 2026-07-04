@@ -73,75 +73,106 @@ public class BankServer {
             try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN weekly_limit REAL DEFAULT 0"); } catch(Exception ignore) {}
             try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN monthly_limit REAL DEFAULT 0"); } catch(Exception ignore) {}
             try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN limit_unlock_time TEXT"); } catch(Exception ignore) {}
-            // THE FIX: Adds the last_swept_date column to the Savings table. This records
-            // the calendar date of the most recent successful sweep for each plan, which
-            // the new cron engine uses to prevent double-sweeping and to catch up if the
-            // server drifted past the exact scheduled minute.
             try { c.createStatement().execute("ALTER TABLE Savings ADD COLUMN last_swept_date TEXT"); } catch(Exception ignore) {}
+            // THE FIX: Stores the IANA timezone string of the user who created or last
+            // edited the plan (e.g. "Africa/Lagos", "Europe/London", "America/New_York").
+            // The cron engine reads this per-plan so it compares exec_time against the
+            // correct local time for that specific user, not the server's system time.
+            try { c.createStatement().execute("ALTER TABLE Savings ADD COLUMN exec_timezone TEXT DEFAULT 'UTC'"); } catch(Exception ignore) {}
         } catch(Exception e) {}
         
         System.out.println("Security Guard is awake. Server listening on port 8080...");
         
-        // THE FIX: The Automated Cron Engine. Now processes Daily Sweeps AND 24-Hour Transfer Limit Deletions!
+        // THE FIX: The Automated Cron Engine — Per-User Timezone Edition
         new Thread(() -> {
+            // THE FIX: In-memory HashSet tracks swept plans using "planId:YYYY-MM-DD" keys
+            // where the date is in EACH PLAN'S OWN LOCAL timezone. This means a plan in
+            // Lagos and a plan in London can both have the correct "today" independently.
+            // The set grows by one tiny entry per plan per day and never needs clearing —
+            // "3:2026-07-04" and "3:2026-07-05" are different keys, so old entries are
+            // naturally harmless and memory usage is negligible for a personal project.
+            java.util.Set<String> sweptKeys = new java.util.HashSet<>();
+
             while (true) {
                 try {
-                    Thread.sleep(60000); // Wait exactly 1 minute
+                    // Check every 30 seconds so the sweep fires within half a minute of
+                    // the set time rather than potentially a full 60 seconds late.
+                    Thread.sleep(30000);
+
                     java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db");
-                    
-                    // 1. Check for expired Time-Locks and completely erase the Transfer Limits from the vault
+
+                    // 1. Check for expired Time-Locks and erase Transfer Limits
                     try {
                         conn.createStatement().executeUpdate("UPDATE Users SET transfer_limit = 0, daily_limit = 0, weekly_limit = 0, monthly_limit = 0, limit_unlock_time = NULL WHERE limit_unlock_time IS NOT NULL AND limit_unlock_time <= datetime('now', 'localtime')");
                     } catch(Exception ignore) {}
 
-                    // 2. Find active portfolios with AUTO funding
-                    
-                    // THE FIX: Replaced the fragile exact-match (exec_time = 'HH:MM') with a
-                    // two-part guard that is immune to Thread.sleep drift:
-                    //   Part A: exec_time <= current_time  → "has the scheduled moment arrived yet today?"
-                    //   Part B: last_swept_date < today    → "has this plan NOT already fired today?"
-                    // Together these mean: fire once, as soon as the time has passed, on each calendar day.
-                    // If the thread oversleeps and wakes 5 minutes late, Part A still catches it.
-                    // If somehow the thread runs twice in the same minute, Part B blocks the second run.
-                    String sweepSql = "SELECT id, account_number, plan_name, daily_amount FROM Savings " +
-                        "WHERE status = 'ACTIVE' AND daily_amount > 0 " +
-                        "AND exec_time <= strftime('%H:%M', 'now', 'localtime') " +
-                        "AND (last_swept_date IS NULL OR last_swept_date < date('now', 'localtime'))";
-                    java.sql.ResultSet rs = conn.createStatement().executeQuery(sweepSql);
-                    
-                    while (rs.next()) {
-                        int planId = rs.getInt("id");
-                        String acc = rs.getString("account_number");
-                        String name = rs.getString("plan_name");
-                        double amt = rs.getDouble("daily_amount");
-                        
-                        // Check if the user has enough money in their main vault to cover the sweep
-                        java.sql.PreparedStatement balStmt = conn.prepareStatement("SELECT balance FROM Users WHERE account_number = ?");
-                        balStmt.setString(1, acc);
-                        java.sql.ResultSet balRs = balStmt.executeQuery();
-                        
-                        if (balRs.next() && balRs.getDouble("balance") >= amt) {
-                            // Execute the automated transfer
-                            conn.prepareStatement("UPDATE Users SET balance = balance - " + amt + " WHERE account_number = '" + acc + "'").executeUpdate();
-                            conn.prepareStatement("UPDATE Savings SET current_balance = current_balance + " + amt + " WHERE id = " + planId).executeUpdate();
-                            
-                            // THE FIX: Stamp today's date on the plan immediately after a successful
-                            // sweep. date('now', 'localtime') [a SQLite function returning today's
-                            // calendar date in 'YYYY-MM-DD' format adjusted to the server's local
-                            // timezone] is what the WHERE clause above compares against, so this
-                            // stamp is what prevents a second sweep from firing on the same day.
-                            conn.prepareStatement("UPDATE Savings SET last_swept_date = date('now', 'localtime') WHERE id = " + planId).executeUpdate();
+                    // 2. Daily Sweep Engine
+                    // THE FIX: SQL now fetches exec_timezone alongside each plan.
+                    // All time filtering is done in Java below using each plan's own
+                    // timezone — zero dependency on SQLite's 'localtime' or the server OS.
+                    try {
+                        String sweepSql = "SELECT id, account_number, plan_name, daily_amount, exec_time, exec_timezone FROM Savings WHERE status = 'ACTIVE' AND daily_amount > 0 AND exec_time IS NOT NULL AND exec_time != ''";
+                        java.sql.ResultSet rs = conn.createStatement().executeQuery(sweepSql);
 
-                            // Log the automated transaction
-                            java.sql.PreparedStatement txStmt = conn.prepareStatement("INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, ?, ?, 'Automated Daily Sweep', datetime('now'))");
-                            txStmt.setString(1, acc);
-                            txStmt.setString(2, name + " (Savings)");
-                            txStmt.setDouble(3, amt);
-                            txStmt.executeUpdate();
+                        while (rs.next()) {
+                            int planId         = rs.getInt("id");
+                            String execTime    = rs.getString("exec_time");
+                            String acc         = rs.getString("account_number");
+                            String name        = rs.getString("plan_name");
+                            double amt         = rs.getDouble("daily_amount");
+                            String execTz      = rs.getString("exec_timezone");
+
+                            // THE FIX: For each plan individually, get the current time in
+                            // THAT PLAN'S stored timezone. ZoneId.of() [a Java method that
+                            // constructs a timezone from an IANA string like "Africa/Lagos"]
+                            // falls back to UTC if the stored string is null or unrecognised.
+                            java.time.ZoneId planZone;
+                            try {
+                                planZone = java.time.ZoneId.of(execTz != null ? execTz : "UTC");
+                            } catch (Exception badZone) {
+                                planZone = java.time.ZoneId.of("UTC");
+                            }
+                            java.time.ZonedDateTime planNow = java.time.ZonedDateTime.now(planZone);
+                            String currentTime = String.format("%02d:%02d", planNow.getHour(), planNow.getMinute());
+                            String today       = planNow.toLocalDate().toString();
+
+                            // Guard 1 — Has the scheduled time arrived yet in the user's timezone?
+                            if (execTime.compareTo(currentTime) > 0) continue;
+
+                            // Guard 2 — Has this plan already fired today (in its own timezone)?
+                            String sweepKey = planId + ":" + today;
+                            if (sweptKeys.contains(sweepKey)) continue;
+
+                            // Check balance
+                            java.sql.PreparedStatement balStmt = conn.prepareStatement("SELECT balance FROM Users WHERE account_number = ?");
+                            balStmt.setString(1, acc);
+                            java.sql.ResultSet balRs = balStmt.executeQuery();
+
+                            if (balRs.next() && balRs.getDouble("balance") >= amt) {
+                                conn.prepareStatement("UPDATE Users SET balance = balance - " + amt + " WHERE account_number = '" + acc + "'").executeUpdate();
+                                conn.prepareStatement("UPDATE Savings SET current_balance = current_balance + " + amt + " WHERE id = " + planId).executeUpdate();
+
+                                // Mark swept in memory first (primary guard), then stamp the DB
+                                sweptKeys.add(sweepKey);
+                                try { conn.prepareStatement("UPDATE Savings SET last_swept_date = '" + today + "' WHERE id = " + planId).executeUpdate(); } catch(Exception ignore) {}
+
+                                java.sql.PreparedStatement txStmt = conn.prepareStatement("INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, ?, ?, 'Automated Daily Sweep', datetime('now'))");
+                                txStmt.setString(1, acc);
+                                txStmt.setString(2, name + " (Savings)");
+                                txStmt.setDouble(3, amt);
+                                txStmt.executeUpdate();
+
+                                System.out.println("[SWEEP] " + name + " | " + acc + " | $" + amt + " at " + currentTime + " (" + execTz + ")");
+                            }
                         }
+                    } catch (Exception sweepErr) {
+                        System.out.println("[SWEEP ERROR] " + sweepErr.getMessage());
                     }
+
                     conn.close();
-                } catch (Exception e) { /* Failsafe: Ignore errors and try again next minute */ }
+                } catch (Exception e) {
+                    System.out.println("[CRON ERROR] " + e.getMessage());
+                }
             }
         }).start();
     }
@@ -1296,6 +1327,10 @@ public class BankServer {
                 String execTime = requestBody.split("\"execTime\":\"")[1].split("\"")[0];
                 String startDate = requestBody.split("\"startDate\":\"")[1].split("\"")[0];
                 String endDate = requestBody.split("\"endDate\":\"")[1].split("\"")[0];
+                // THE FIX: Parse the IANA timezone string sent by the browser.
+                // Defaults to "UTC" safely if the field is missing for any reason.
+                String timezone = "UTC";
+                try { timezone = requestBody.split("\"timezone\":\"")[1].split("\"")[0]; } catch(Exception ignore) {}
 
                 java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db");
                 
@@ -1335,11 +1370,15 @@ public class BankServer {
                 }
 
                 // Create the Savings Portfolio in the database
-                String saveSql = "INSERT INTO Savings (account_number, plan_name, category, discipline, current_balance, target_amount, daily_amount, exec_time, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                // THE FIX: Added exec_timezone as the 11th column so every plan
+                // permanently remembers the timezone of the user who created it.
+                String saveSql = "INSERT INTO Savings (account_number, plan_name, category, discipline, current_balance, target_amount, daily_amount, exec_time, start_date, end_date, exec_timezone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 java.sql.PreparedStatement saveStmt = conn.prepareStatement(saveSql);
                 saveStmt.setString(1, account); saveStmt.setString(2, name); saveStmt.setString(3, category);
                 saveStmt.setString(4, discipline); saveStmt.setDouble(5, initial); saveStmt.setDouble(6, target);
                 saveStmt.setDouble(7, daily); saveStmt.setString(8, execTime); saveStmt.setString(9, startDate); saveStmt.setString(10, endDate);
+                // THE FIX: 11th parameter — the browser's IANA timezone string
+                saveStmt.setString(11, timezone);
                 saveStmt.executeUpdate();
 
                 // THE FIX: Opening a savings plan signals financial discipline (+5).
@@ -1834,17 +1873,20 @@ public class BankServer {
                 int planId = Integer.parseInt(requestBody.split("\"planId\":")[1].split(",")[0].replaceAll("[^\\d]", ""));
                 double dailyAmount = Double.parseDouble(requestBody.split("\"dailyAmount\":")[1].split(",")[0].replaceAll("[^\\d.]", ""));
                 String execTime = requestBody.split("\"execTime\":\"")[1].split("\"")[0];
+                // THE FIX: Parse the updated timezone. If the user edits their sweep
+                // from a different device or location, the timezone updates accordingly.
+                String timezone = "UTC";
+                try { timezone = requestBody.split("\"timezone\":\"")[1].split("\"")[0]; } catch(Exception ignore) {}
 
                 try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
-                    // THE FIX: A PreparedStatement [a precompiled SQL template where ? placeholders
-                    // are filled safely by Java, preventing SQL injection attacks] updates both
-                    // the daily_amount and exec_time columns, and clears last_swept_date so the
-                    // new schedule can fire today if the new time hasn't passed yet.
-                    String sql = "UPDATE Savings SET daily_amount = ?, exec_time = ?, last_swept_date = NULL WHERE id = ?";
+                    // THE FIX: Also updates exec_timezone alongside exec_time so the
+                    // cron always uses the correct timezone after an edit.
+                    String sql = "UPDATE Savings SET daily_amount = ?, exec_time = ?, exec_timezone = ?, last_swept_date = NULL WHERE id = ?";
                     java.sql.PreparedStatement stmt = conn.prepareStatement(sql);
                     stmt.setDouble(1, dailyAmount);
                     stmt.setString(2, execTime);
-                    stmt.setInt(3, planId);
+                    stmt.setString(3, timezone);
+                    stmt.setInt(4, planId);
                     stmt.executeUpdate();
                 }
 

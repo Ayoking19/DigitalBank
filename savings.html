@@ -591,6 +591,13 @@
                 }
             }
 
+            // THE FIX: Intl.DateTimeFormat().resolvedOptions().timeZone [a built-in
+            // JavaScript API that reads the exact IANA timezone from the user's OS,
+            // e.g. "Africa/Lagos", "Europe/London", "America/New_York"] is added to
+            // the payload so Java stores it alongside the plan and the cron engine
+            // can fire at the correct local time for this specific user.
+            payload.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
             // Transmitting the legal contract to the Java Vault
             fetch("https://digitalbank.duckdns.org/api/create-savings", {
                 method: "POST", headers: {"Content-Type": "application/json"},
@@ -647,7 +654,10 @@
 
             fetch("https://digitalbank.duckdns.org/api/edit-savings", {
                 method: "POST", headers: {"Content-Type":"application/json"},
-                body: JSON.stringify({ planId: activeManageId, dailyAmount: amt, execTime: time })
+                // THE FIX: Timezone included in the edit payload so if the user
+                // edits their sweep from a different location or device, the stored
+                // timezone updates to match their current browser location.
+                body: JSON.stringify({ planId: activeManageId, dailyAmount: amt, execTime: time, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone })
             }).then(res => {
                 if(!res.ok) return res.text().then(err => { throw new Error(err); });
                 window.location.reload();
