@@ -712,6 +712,74 @@ select.glass-input {
 }
 
 /* ==========================================================================
+   SAVINGS CARD ARCHITECTURE (Fixing the Squish)
+   ========================================================================== */
+.premium-card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.yield-badge {
+    display: inline-block;
+    background: rgba(0, 255, 136, 0.15);
+    color: #00ff88;
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 10px; /* Rule 3: Immaculate padding, forcing separation */
+    letter-spacing: 0.5px;
+}
+
+.card-main-data {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 15px; /* Ensures name and amount mathematically cannot touch */
+}
+
+.savings-identity {
+    flex: 1; 
+    min-width: 0; /* CRITICAL FIX: Forces Flexbox to respect the text truncation */
+    text-align: left;
+}
+
+.savings-name {
+    margin: 0 0 4px 0;
+    color: var(--text-primary);
+    font-size: 1.15rem !important; /* Shrunk from standard h3 size */
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Failsafe truncation */
+}
+
+.savings-tags {
+    margin: 0;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.savings-amount {
+    flex-shrink: 0; /* Revokes the browser's permission to shrink the money text */
+    text-align: right;
+}
+
+.amount-current {
+    margin: 0;
+    color: var(--accent-gold);
+    font-family: 'Inter', monospace;
+    font-size: 1.3rem !important; /* Shrunk from 1.8rem */
+    font-weight: 600;
+}
+
+/* ==========================================================================
    WIRE TRANSFER & BENEFICIARY UI
    ========================================================================== */
 .slider-section { margin-bottom: 30px; text-align: left; }

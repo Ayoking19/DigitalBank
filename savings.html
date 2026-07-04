@@ -54,7 +54,7 @@
                 
                 <div class="input-group" style="text-align: left; margin-bottom: 25px;">
                     <label class="input-label" style="color: #00ff88;">1. Name Your Goal</label>
-                    <input type="text" id="planName" class="glass-input" placeholder="e.g. Birthday, New Car, Vacation..." maxlength="20" style="font-size: 1.2rem; padding: 15px;" autocomplete="off">
+                    <input type="text" id="planName" class="glass-input" placeholder="e.g. Birthday, New Car, Vacation..." maxlength="18" style="font-size: 1.2rem; padding: 15px;" autocomplete="off">
                     <div id="phase1Error" class="error-text" style="margin-top: 10px;"></div>
                 </div>
 
@@ -297,27 +297,34 @@
                     }
                     
                     ledger.innerHTML += `
-                        <div class="black-card" style="padding: 20px; border-color: rgba(255,255,255,0.05); margin-bottom: 15px; border-radius: 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                <div>
-                                    <h3 style="margin: 0; color: white; display: flex; align-items: center; gap: 10px;">
-                                        ${plan.name} 
-                                        <span style="font-size: 0.7rem; padding: 2px 8px; background: rgba(0, 255, 136, 0.1); color: #00ff88; border-radius: 12px; border: 1px solid rgba(0,255,136,0.3);">+${formatInterest} Yield</span>
-                                    </h3>
-                                    <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: ${color};">${plan.category} • ${plan.discipline}</p>
-                                </div>
-                                <div style="text-align: right;">
-                                    <h2 style="margin: 0; color: var(--accent-gold); font-family: monospace;">${formatBal}${formatTarget}</h2>
-                                </div>
-                            </div>
-                            <div style="display: flex; gap: 10px;">
-                                ${deleteHtml}
-                                <!-- THE FIX: Passing the TOTAL balance (Base + Yield) into the UI controller so the user can withdraw every penny! -->
-                                <button class="glass-btn secondary" style="padding: 8px 15px; font-size: 0.8rem;" onclick="openManageModal(${plan.id}, '${plan.name}', '${plan.discipline}', '${plan.category}', ${isGoalMet}, ${plan.balance + plan.interest})">${actionBtnText}</button>
-                            </div>
-                            ${countdownHtml}
-                        </div>
-                    `;
+    <div class="black-card" style="padding: 20px; border-color: rgba(255,255,255,0.05); margin-bottom: 15px; border-radius: 12px;">
+        
+        <!-- THE FIX: The New Decoupled Header Structure -->
+        <div class="premium-card-header">
+            <!-- Yield sits cleanly above everything else -->
+            <div class="yield-badge">+${formatInterest} Yield</div>
+            
+            <div class="card-main-data">
+                <div class="savings-identity">
+                    <!-- Smaller Name Size -->
+                    <h3 class="savings-name" title="${plan.name}">${plan.name}</h3>
+                    <p class="savings-tags" style="color: ${color};">${plan.category} • ${plan.discipline}</p>
+                </div>
+                
+                <div class="savings-amount">
+                    <!-- Smaller Amount Size, securely boxed on the right -->
+                    <h2 class="amount-current">${formatBal}${formatTarget}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            ${deleteHtml}
+            <button class="glass-btn secondary" style="padding: 8px 15px; font-size: 0.8rem;" onclick="openManageModal(${plan.id}, '${plan.name}', '${plan.discipline}', '${plan.category}', ${isGoalMet}, ${plan.balance + plan.interest})">${actionBtnText}</button>
+        </div>
+        ${countdownHtml}
+    </div>
+`;
                 });
 
                 document.getElementById("totalSavingsDisplay").innerText = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(totalSavings);
