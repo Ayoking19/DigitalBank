@@ -11,17 +11,27 @@
 
     <div class="glass-panel" id="loginCard">
         <h1 style="margin-bottom: 5px; font-size: 2.2rem; margin-top: 0;">DigitalBank</h1>
-        <p style="margin-bottom: 35px; font-size: 0.95rem;">Secure Institutional Access.</p>
+        <p style="margin-bottom: 35px; font-size: 0.95rem;" id="loginSubtitle">Secure Institutional Access.</p>
 
-        <div id="g_id_onload" data-client_id="983715185680-0tv318044796ue5vd9frabet52gg443o.apps.googleusercontent.com" data-context="signin" data-callback="handleGoogleLogin"></div>
-        <div class="google-btn-wrapper">
-            <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="outline" data-text="continue_with" data-size="large" data-logo_alignment="center"></div>
+        <div id="googleAuthSection">
+            <div id="g_id_onload" data-client_id="983715185680-0tv318044796ue5vd9frabet52gg443o.apps.googleusercontent.com" data-context="signin" data-callback="handleGoogleLogin"></div>
+            <div class="google-btn-wrapper">
+                <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="outline" data-text="continue_with" data-size="large" data-logo_alignment="center"></div>
+            </div>
+            <p style="font-size: 0.75rem; color: #64748B; margin-top: 10px; line-height: 1.5;">
+                By continuing, you agree to our <br>
+                <a href="#" style="color: #94A3B8; text-decoration: none;">Terms of Service</a> & <a href="#" style="color: #94A3B8; text-decoration: none;">Privacy Policy</a>.
+            </p>
         </div>
 
-        <p style="font-size: 0.75rem; color: #64748B; margin-top: 10px; line-height: 1.5;">
-            By continuing, you agree to our <br>
-            <a href="#" style="color: #94A3B8; text-decoration: none;">Terms of Service</a> & <a href="#" style="color: #94A3B8; text-decoration: none;">Privacy Policy</a>.
-        </p>
+        <div id="pinUnlockSection" style="display: none;">
+            <div class="input-group">
+                <input type="password" id="fastUnlockPin" class="glass-input" maxlength="4" placeholder="••••" style="font-size: 2.5rem; letter-spacing: 15px; text-align: center; margin-bottom: 15px;">
+            </div>
+            <div id="unlockError" class="error-text" style="text-align: center;"></div>
+            <button class="glass-btn" onclick="executePinUnlock()">Unlock Vault</button>
+            <p style="font-size: 0.8rem; color: #64748B; margin-top: 20px; cursor: pointer; transition: color 0.2s;" onclick="forceGoogleLogin()">Not you? Sign in with a different account.</p>
+        </div>
     </div>
 
     <div id="onboardingModal" class="modal-overlay">
@@ -308,6 +318,54 @@
                 globalError.innerText = error.message;
                 globalError.style.display = "block";
             });
+        }
+
+        // THE FIX: The Boot Sequence
+        document.addEventListener("DOMContentLoaded", () => {
+            let savedId = localStorage.getItem("digitalBankId");
+            // If a saved ID exists on the hard drive, we hide Google and deploy the PIN pad
+            if (savedId && savedId !== "") {
+                document.getElementById("googleAuthSection").style.display = "none";
+                document.getElementById("pinUnlockSection").style.display = "block";
+                document.getElementById("loginSubtitle").innerText = "Welcome back. Enter PIN to unlock.";
+            }
+        });
+
+        // THE FIX: The PIN Verification Engine
+        function executePinUnlock() {
+            let pin = document.getElementById("fastUnlockPin").value;
+            let err = document.getElementById("unlockError");
+            err.style.display = "none";
+
+            if (!/^\d{4}$/.test(pin)) {
+                err.innerText = "Please enter your 4-digit PIN.";
+                err.style.display = "block";
+                return;
+            }
+
+            let savedId = localStorage.getItem("digitalBankId");
+
+            // Ping the new Java endpoint we are about to build
+            fetch("https://digitalbank.duckdns.org/api/verify-pin", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ googleId: savedId, pin: pin })
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Invalid Security PIN.");
+                window.location.replace("./home.html"); // Access Granted!
+            })
+            .catch(error => {
+                err.innerText = error.message;
+                err.style.display = "block";
+                document.getElementById("fastUnlockPin").value = ""; // Clear the pad on failure
+            });
+        }
+
+        // Failsafe to allow users to switch accounts
+        function forceGoogleLogin() {
+            localStorage.removeItem("digitalBankId");
+            window.location.reload();
         }
     </script>
 </body>

@@ -15,6 +15,9 @@ public class BankServer {
         // 2. Creating the Authentication Door
         server.createContext("/api/auth", new AuthHandler());
         
+        // THE FIX: Registering the Persistent Session door
+        server.createContext("/api/verify-pin", new VerifyPinHandler());
+        
         // THE FIX: Creating the brand new Registration Door for our locked-in data
         server.createContext("/api/register", new RegisterHandler());
         
@@ -1927,6 +1930,44 @@ public class BankServer {
             // older DB), we silently swallow the error so the main financial transaction
             // (the loan, repayment, or savings creation) is NEVER rolled back just because
             // of a score update. The catch block here is the safety net.
+        }
+    }
+
+    // THE FIX: The Persistent Session Unlock Engine
+    static class VerifyPinHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            
+            if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
+
+            try {
+                String requestBody = new String(exchange.getRequestBody().readAllBytes());
+                String googleId = requestBody.split("\"googleId\":\"")[1].split("\"")[0];
+                String pin = requestBody.split("\"pin\":\"")[1].split("\"")[0];
+
+                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                    String sql = "SELECT id FROM Users WHERE google_id = ? AND pin = ?";
+                    java.sql.PreparedStatement stmt = conn.prepareStatement(sql);
+                    stmt.setString(1, googleId);
+                    stmt.setString(2, pin);
+                    
+                    if (stmt.executeQuery().next()) {
+                        String ok = "Verified";
+                        exchange.sendResponseHeaders(200, ok.length());
+                        exchange.getResponseBody().write(ok.getBytes());
+                    } else {
+                        String err = "Invalid PIN.";
+                        exchange.sendResponseHeaders(401, err.length());
+                        exchange.getResponseBody().write(err.getBytes());
+                    }
+                }
+                exchange.getResponseBody().close();
+            } catch (Exception e) {
+                String err = e.getMessage();
+                exchange.sendResponseHeaders(500, err.length());
+                exchange.getResponseBody().write(err.getBytes());
+                exchange.getResponseBody().close();
+            }
         }
     }
 
