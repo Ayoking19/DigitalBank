@@ -53,6 +53,9 @@ public class BankServer {
         // Without this line, the Java server has no routing entry for this URL and
         // returns "No context found for request" for every call savings.html makes to it.
         server.createContext("/api/edit-savings", new EditSavingsHandler());
+        // THE FIX: New endpoint that receives the device's FCM token after login
+        // and stores it against the user's account for notification dispatch.
+        server.createContext("/api/register-fcm-token", new RegisterFcmTokenHandler());
         
         // THE FIX: The Profile & Configuration Pipeline
         server.createContext("/api/full-profile", new FullProfileHandler());
@@ -77,11 +80,10 @@ public class BankServer {
             try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN monthly_limit REAL DEFAULT 0"); } catch(Exception ignore) {}
             try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN limit_unlock_time TEXT"); } catch(Exception ignore) {}
             try { c.createStatement().execute("ALTER TABLE Savings ADD COLUMN last_swept_date TEXT"); } catch(Exception ignore) {}
-            // THE FIX: Stores the IANA timezone string of the user who created or last
-            // edited the plan (e.g. "Africa/Lagos", "Europe/London", "America/New_York").
-            // The cron engine reads this per-plan so it compares exec_time against the
-            // correct local time for that specific user, not the server's system time.
             try { c.createStatement().execute("ALTER TABLE Savings ADD COLUMN exec_timezone TEXT DEFAULT 'UTC'"); } catch(Exception ignore) {}
+            // THE FIX: Stores each user's FCM device token so the cron engine and
+            // transfer handlers can send push notifications directly to their phone.
+            try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN fcm_token TEXT"); } catch(Exception ignore) {}
         } catch(Exception e) {}
         
         System.out.println("Security Guard is awake. Server listening on port 8080...");
@@ -164,6 +166,21 @@ public class BankServer {
                                 txStmt.setString(2, name + " (Savings)");
                                 txStmt.setDouble(3, amt);
                                 txStmt.executeUpdate();
+
+                                // THE FIX: Notify the account holder that the sweep fired.
+                                try {
+                                    java.sql.PreparedStatement fcmStmt = conn.prepareStatement("SELECT fcm_token FROM Users WHERE account_number = ?");
+                                    fcmStmt.setString(1, acc);
+                                    java.sql.ResultSet fcmRs = fcmStmt.executeQuery();
+                                    if (fcmRs.next()) {
+                                        String tok = fcmRs.getString("fcm_token");
+                                        String sweepAmt = String.format("$%.2f", amt);
+                                        String planFinal = name;
+                                        new Thread(() -> sendFcmNotification(tok,
+                                            "💸 Savings Sweep",
+                                            sweepAmt + " automatically moved to '" + planFinal + "' savings plan.")).start();
+                                    }
+                                } catch (Exception ignore) {}
 
                                 System.out.println("[SWEEP] " + name + " | " + acc + " | $" + amt + " at " + currentTime + " (" + execTz + ")");
                             }
@@ -438,7 +455,9 @@ public class BankServer {
                 try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
                 
                 // THE FIX: Adding the Time-Based limit columns to the SELECT query so the ResultSet can actually find them!
-                String verifySql = "SELECT account_number, balance, transfer_limit, daily_limit, weekly_limit, monthly_limit FROM Users WHERE google_id = ? AND pin = ?";
+                // THE FIX: Added full_name to the SELECT so we can include the sender's
+                // real name in the receiver's credit notification message.
+                String verifySql = "SELECT account_number, full_name, balance, transfer_limit, daily_limit, weekly_limit, monthly_limit FROM Users WHERE google_id = ? AND pin = ?";
                 java.sql.PreparedStatement verifyStmt = conn.prepareStatement(verifySql);
                 verifyStmt.setString(1, senderId);
                 verifyStmt.setString(2, senderPin);
@@ -456,6 +475,8 @@ public class BankServer {
                 
                 double currentBalance = rsSender.getDouble("balance");
                 String senderAccNum = rsSender.getString("account_number");
+                // THE FIX: Capture sender's name here for the receiver's notification
+                String senderName = rsSender.getString("full_name");
                 
                 // THE FIX: The Advanced Time-Based Limit Matrix!
                 double perTransferLimit = rsSender.getDouble("transfer_limit");
@@ -572,11 +593,45 @@ public class BankServer {
                 }
                 
                 conn.commit(); // Approving the final math and unlocking the vault
-                // THE FIX: Deleted the conn.close() that used to be here. The try-with-resources
-                // block that wraps this entire handler automatically closes the connection when it
-                // reaches its closing brace below. Manually calling conn.close() early and then
-                // trying to use the connection again is what caused the "database connection closed"
-                // crash and the disappearing receipt popup.
+
+                // THE FIX: Fetch the names and FCM tokens for both sender and receiver
+                // AFTER the commit so a failure here never affects the financial transaction.
+                // We then fire notifications in a background Thread so the API response
+                // is sent instantly without waiting for the FCM HTTP call to complete.
+                try {
+                    String receiverName = "Unknown";
+                    String receiverFcmToken = null;
+                    String senderFcmToken = null;
+
+                    java.sql.PreparedStatement rcvStmt = conn.prepareStatement("SELECT full_name, fcm_token FROM Users WHERE account_number = ?");
+                    rcvStmt.setString(1, receiverAcc);
+                    java.sql.ResultSet rcvRs = rcvStmt.executeQuery();
+                    if (rcvRs.next()) {
+                        receiverName = rcvRs.getString("full_name");
+                        receiverFcmToken = rcvRs.getString("fcm_token");
+                    }
+
+                    java.sql.PreparedStatement sndStmt = conn.prepareStatement("SELECT fcm_token FROM Users WHERE account_number = ?");
+                    sndStmt.setString(1, senderAccNum);
+                    java.sql.ResultSet sndRs = sndStmt.executeQuery();
+                    if (sndRs.next()) senderFcmToken = sndRs.getString("fcm_token");
+
+                    String fmtAmt       = String.format("$%.2f", transferAmount);
+                    String finalRcvTok  = receiverFcmToken;
+                    String finalSndTok  = senderFcmToken;
+                    String finalSndName = senderName;
+                    String finalRcvName = receiverName;
+
+                    // THE FIX: Background thread — notifications fire without blocking the response
+                    new Thread(() -> {
+                        sendFcmNotification(finalRcvTok,
+                            "💰 Money Received",
+                            fmtAmt + " credited to your account from " + finalSndName);
+                        sendFcmNotification(finalSndTok,
+                            "📤 Transfer Sent",
+                            fmtAmt + " debited from your account to " + finalRcvName);
+                    }).start();
+                } catch (Exception ignore) {}
 
                 String success = "{\"status\":\"Success\", \"id\":\"" + formattedId + "\"}";
                 exchange.sendResponseHeaders(200, success.length());
@@ -1161,7 +1216,25 @@ public class BankServer {
                     }
                 } catch (Exception ignore) {}
 
-                conn.commit(); conn.close();
+                conn.commit();
+
+                // THE FIX: Send a debit notification for the loan repayment.
+                // If the loan is now CLOSED, the message celebrates the full payoff.
+                try {
+                    java.sql.PreparedStatement fcmStmt = conn.prepareStatement("SELECT fcm_token FROM Users WHERE account_number = ?");
+                    fcmStmt.setString(1, account);
+                    java.sql.ResultSet fcmRs = fcmStmt.executeQuery();
+                    if (fcmRs.next()) {
+                        String tok = fcmRs.getString("fcm_token");
+                        String fmtAmt = String.format("$%.2f", amount);
+                        String notifBody = newStatus.equals("CLOSED")
+                            ? fmtAmt + " debited — Loan fully repaid! 🎉"
+                            : fmtAmt + " debited for credit facility repayment.";
+                        new Thread(() -> sendFcmNotification(tok, "🏦 Loan Payment", notifBody)).start();
+                    }
+                } catch (Exception ignore) {}
+
+                conn.close();
                 String ok = "Repayment Successful.";
                 exchange.sendResponseHeaders(200, ok.length()); exchange.getResponseBody().write(ok.getBytes()); exchange.getResponseBody().close();
             } catch (Exception e) { 
@@ -1930,6 +2003,134 @@ public class BankServer {
             // older DB), we silently swallow the error so the main financial transaction
             // (the loan, repayment, or savings creation) is NEVER rolled back just because
             // of a score update. The catch block here is the safety net.
+        }
+    }
+
+    // THE FIX: Receives the device's FCM token after login and stores it in the DB
+    // so the notification helpers below can reach that specific device.
+    static class RegisterFcmTokenHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
+            try {
+                String body = new String(exchange.getRequestBody().readAllBytes());
+                String googleId = body.split("\"googleId\":\"")[1].split("\"")[0];
+                String fcmToken = body.split("\"fcmToken\":\"")[1].split("\"")[0];
+
+                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                    java.sql.PreparedStatement stmt = conn.prepareStatement("UPDATE Users SET fcm_token = ? WHERE google_id = ?");
+                    stmt.setString(1, fcmToken);
+                    stmt.setString(2, googleId);
+                    stmt.executeUpdate();
+                }
+                String ok = "Token Registered";
+                exchange.sendResponseHeaders(200, ok.length());
+                exchange.getResponseBody().write(ok.getBytes());
+                exchange.getResponseBody().close();
+            } catch (Exception e) {
+                String err = e.getMessage();
+                exchange.sendResponseHeaders(500, err.length());
+                exchange.getResponseBody().write(err.getBytes());
+                exchange.getResponseBody().close();
+            }
+        }
+    }
+
+    // THE FIX: Cached OAuth access token so we only call Google's token endpoint
+    // once per hour instead of on every notification.
+    private static String cachedAccessToken = null;
+    private static long tokenExpiryMs = 0;
+
+    // THE FIX: Generates a short-lived OAuth 2.0 access token by signing a JWT
+    // [JSON Web Token: a self-contained signed credential] with the private key
+    // from the Firebase service account JSON file. This is required by the FCM
+    // HTTP v1 API — the older server key approach was shut down by Google in 2024.
+    private static String getFirebaseAccessToken() throws Exception {
+        if (cachedAccessToken != null && System.currentTimeMillis() < tokenExpiryMs) {
+            return cachedAccessToken;
+        }
+        // Read service account file from the server
+        String json = new String(java.nio.file.Files.readAllBytes(
+            java.nio.file.Paths.get("/root/firebase-service-account.json")));
+
+        String clientEmail = json.split("\"client_email\":\"")[1].split("\"")[0];
+        String privateKeyStr = json.split("\"private_key\":\"")[1].split("\"")[0]
+            .replace("\\n", "\n")
+            .replace("-----BEGIN PRIVATE KEY-----", "")
+            .replace("-----END PRIVATE KEY-----", "")
+            .replaceAll("\\s", "");
+
+        // Build the JWT header and payload
+        long now = System.currentTimeMillis() / 1000;
+        String header  = java.util.Base64.getUrlEncoder().withoutPadding()
+            .encodeToString("{\"alg\":\"RS256\",\"typ\":\"JWT\"}".getBytes());
+        String payload = java.util.Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(("{\"iss\":\"" + clientEmail
+                + "\",\"scope\":\"https://www.googleapis.com/auth/firebase.messaging\""
+                + ",\"aud\":\"https://oauth2.googleapis.com/token\""
+                + ",\"exp\":" + (now + 3600) + ",\"iat\":" + now + "}").getBytes());
+
+        String signingInput = header + "." + payload;
+
+        // Sign the JWT with the RSA private key
+        byte[] keyBytes = java.util.Base64.getDecoder().decode(privateKeyStr);
+        java.security.PrivateKey privateKey = java.security.KeyFactory.getInstance("RSA")
+            .generatePrivate(new java.security.spec.PKCS8EncodedKeySpec(keyBytes));
+        java.security.Signature sig = java.security.Signature.getInstance("SHA256withRSA");
+        sig.initSign(privateKey);
+        sig.update(signingInput.getBytes());
+        String signature = java.util.Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(sig.sign());
+
+        String jwt = signingInput + "." + signature;
+
+        // Exchange the JWT for a short-lived access token
+        String tokenBody = "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=" + jwt;
+        java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+        java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
+            .uri(java.net.URI.create("https://oauth2.googleapis.com/token"))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(java.net.http.HttpRequest.BodyPublishers.ofString(tokenBody))
+            .build();
+        String resp = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofString()).body();
+        String accessToken = resp.split("\"access_token\":\"")[1].split("\"")[0];
+
+        // Cache the token for 55 minutes (it lasts 60, we refresh 5 minutes early)
+        cachedAccessToken = accessToken;
+        tokenExpiryMs = System.currentTimeMillis() + (55 * 60 * 1000);
+        return accessToken;
+    }
+
+    // THE FIX: The core notification dispatcher. Sends a push notification to a
+    // specific device via the FCM HTTP v1 API. Non-critical — failures are printed
+    // but never crash the main financial operation that called this.
+    private static void sendFcmNotification(String fcmToken, String title, String body) {
+        if (fcmToken == null || fcmToken.isEmpty()) return;
+        try {
+            // IMPORTANT: Replace YOUR_FIREBASE_PROJECT_ID with your actual project ID
+            // from Firebase Console → Project Settings → General → Project ID
+            String projectId = "digitalbank-5d8fb";
+            String accessToken = getFirebaseAccessToken();
+
+            String payload = "{\"message\":{\"token\":\"" + fcmToken
+                + "\",\"notification\":{\"title\":\"" + title
+                + "\",\"body\":\"" + body
+                + "\"},\"android\":{\"priority\":\"high\"}}}";
+
+            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
+                .uri(java.net.URI.create(
+                    "https://fcm.googleapis.com/v1/projects/" + projectId + "/messages:send"))
+                .header("Authorization", "Bearer " + accessToken)
+                .header("Content-Type", "application/json")
+                .POST(java.net.http.HttpRequest.BodyPublishers.ofString(payload))
+                .build();
+
+            java.net.http.HttpResponse<String> response =
+                client.send(req, java.net.http.HttpResponse.BodyHandlers.ofString());
+            System.out.println("[FCM] Sent to " + fcmToken.substring(0, 10) + "... → " + response.statusCode());
+        } catch (Exception e) {
+            System.out.println("[FCM ERROR] " + e.getMessage());
         }
     }
 
