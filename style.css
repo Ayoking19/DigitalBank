@@ -916,3 +916,11 @@ select.glass-input option {
 }
 /* Padding buffer so content doesn't hide behind the new bottom nav */
 body { padding-bottom: 90px; }
+
+/* ==========================================================================
+   NATIVE APP NORMALIZATION
+   ========================================================================== */
+* {
+    /* THE FIX: Forces the default mobile tap highlight overlay to be completely invisible */
+    -webkit-tap-highlight-color: transparent;
+}
