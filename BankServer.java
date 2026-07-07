@@ -1632,7 +1632,15 @@ public class BankServer {
 
                     conn.setAutoCommit(false);
 
-                    String deductSql = "UPDATE Savings SET current_balance = current_balance - ?, withdrawal_lock_until = NULL WHERE id = ?";
+                    // THE FIX: MAX(0, current_balance - ?) prevents the balance from
+                    // going negative when the withdrawal amount includes accrued yield
+                    // on top of the stored principal. The yield portion is computed
+                    // on-the-fly and never stored in current_balance, so subtracting
+                    // the full withdrawal amount (principal + yield) from current_balance
+                    // (principal only) previously produced a negative result like -5.
+                    // MAX(0, ...) floors it at zero — the yield comes "free" from the
+                    // interest calculation, exactly like a real bank paying from its pool.
+                    String deductSql = "UPDATE Savings SET current_balance = MAX(0, current_balance - ?), withdrawal_lock_until = NULL WHERE id = ?";
                     java.sql.PreparedStatement deductStmt = conn.prepareStatement(deductSql);
                     deductStmt.setDouble(1, amount); deductStmt.setInt(2, planId);
                     deductStmt.executeUpdate();
