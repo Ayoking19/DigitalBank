@@ -2061,12 +2061,18 @@ public class BankServer {
         String json = new String(java.nio.file.Files.readAllBytes(
             java.nio.file.Paths.get("/root/firebase-service-account.json")));
 
-        String clientEmail = json.split("\"client_email\":\"")[1].split("\"")[0];
-        String privateKeyStr = json.split("\"private_key\":\"")[1].split("\"")[0]
+        // THE FIX: Added \\s* to handle the space Firebase pretty-prints between
+        // ":" and the value in service account JSON (e.g. "client_email": "...").
+        // Without this, "client_email": "..." doesn't match the pattern "client_email":"
+        // (no space), split() returns only 1 element, and [1] throws
+        // ArrayIndexOutOfBoundsException: Index 1 out of bounds for length 1.
+        // This was silently failing every single FCM attempt since day one.
+        String clientEmail = json.split("\"client_email\":\\s*\"")[1].split("\"")[0];
+        String privateKeyStr = json.split("\"private_key\":\\s*\"")[1].split("\"")[0]
             .replace("\\n", "\n")
             .replace("-----BEGIN PRIVATE KEY-----", "")
             .replace("-----END PRIVATE KEY-----", "")
-            .replaceAll("\\s", "");
+            .replaceAll("[\\s]", "");
 
         // Build the JWT header and payload
         long now = System.currentTimeMillis() / 1000;
@@ -2101,7 +2107,8 @@ public class BankServer {
             .POST(java.net.http.HttpRequest.BodyPublishers.ofString(tokenBody))
             .build();
         String resp = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofString()).body();
-        String accessToken = resp.split("\"access_token\":\"")[1].split("\"")[0];
+        // THE FIX: Same space fix for the OAuth token response from Google.
+        String accessToken = resp.split("\"access_token\":\\s*\"")[1].split("\"")[0];
 
         // Cache the token for 55 minutes (it lasts 60, we refresh 5 minutes early)
         cachedAccessToken = accessToken;
