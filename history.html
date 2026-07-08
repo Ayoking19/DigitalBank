@@ -77,8 +77,8 @@
             </div>
 
             <div class="btn-container">
-                <button class="glass-btn secondary" onclick="closeReceiptSafe()">Close</button>
-                <button class="glass-btn" onclick="downloadReceiptSafe()">Download Image ↓</button>
+                <button class="glass-btn secondary" id="histReceiptCloseBtn" onclick="closeReceiptSafe()">Close</button>
+                <button class="glass-btn" id="histReceiptDownloadBtn" onclick="downloadReceiptSafe()">Download Image ↓</button>
             </div>
         </div>
     </div>
@@ -220,6 +220,16 @@
             });
         }
 
+        // THE FIX: These two functions were completely missing from history.html.
+        // The close and download buttons called them but they didn't exist anywhere
+        // in the file, causing a silent ReferenceError crash every single time.
+        function closeReceiptSafe() {
+            document.getElementById("receiptModal").style.display = "none";
+        }
+        function downloadReceiptSafe() {
+            downloadReceipt();
+        }
+
         function downloadReceipt() {
             let receiptDiv = document.getElementById("receiptData");
             html2canvas(receiptDiv, {
@@ -258,6 +268,15 @@
             document.getElementById("recAmt").innerText = amount;
             
             document.getElementById("receiptModal").style.display = "flex";
+
+            // THE FIX: Disable buttons briefly after opening to prevent ghost clicks
+            // from the transaction row tap that triggered the receipt opening.
+            let closeBtn = document.getElementById("histReceiptCloseBtn");
+            let dlBtn = document.getElementById("histReceiptDownloadBtn");
+            [closeBtn, dlBtn].forEach(b => { if(b) { b.disabled = true; b.style.opacity = "0.4"; b.style.cursor = "not-allowed"; }});
+            setTimeout(() => {
+                [closeBtn, dlBtn].forEach(b => { if(b) { b.disabled = false; b.style.opacity = "1"; b.style.cursor = "pointer"; }});
+            }, 1500);
         }
 
         // THE FIX: The Premium SVG-Branded, Multi-Page, Selectable-Text PDF Engine

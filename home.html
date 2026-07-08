@@ -148,8 +148,8 @@
             </div>
 
             <div class="btn-container">
-                <button class="glass-btn secondary" onclick="closeReceiptSafe()">Close</button>
-                <button class="glass-btn" onclick="downloadReceiptSafe()">Download Image ↓</button>
+                <button class="glass-btn secondary" id="homeReceiptCloseBtn" onclick="closeReceiptSafe()">Close</button>
+                <button class="glass-btn" id="homeReceiptDownloadBtn" onclick="downloadReceiptSafe()">Download Image ↓</button>
             </div>
         </div>
     </div>
@@ -203,15 +203,17 @@
     <script>
         // The Global Master Keys & State Memory
         let userId = "";
-        let receiptShownAt = 0; // THE FIX: Timestamp to block ghost clicks
-        
+
+        // THE FIX: Replaced the 2000ms time guard entirely. The guard checked
+        // Date.now() - 0 on first call (receiptShownAt initialized to 0), which
+        // equals ~1.7 trillion — always greater than 2000 — so it never blocked
+        // anything. And on subsequent calls, a desktop click within 2 seconds was
+        // also blocked, forcing users to wait. The disabled button approach below
+        // is the correct fix: a disabled button physically cannot be clicked.
         function closeReceiptSafe() {
-            // THE FIX: Increased the ghost-click shield to 2000ms (2 seconds)
-            if (Date.now() - receiptShownAt < 2000) return;
-            window.location.reload();
+            document.getElementById("receiptModal").style.display = "none";
         }
         function downloadReceiptSafe() {
-            if (Date.now() - receiptShownAt < 2000) return;
             downloadReceipt();
         }
         let myAccountNumber = ""; 
@@ -432,7 +434,15 @@
             document.getElementById("recAmt").innerText = amount;
             
             document.getElementById("receiptModal").style.display = "flex";
-            receiptShownAt = Date.now(); // Record exact time it opens to prevent ghost clicks
+
+            // THE FIX: Disable both buttons for 1.5 seconds after the receipt opens
+            // to prevent ghost clicks from the transaction row tap that opened it.
+            let closeBtn = document.getElementById("homeReceiptCloseBtn");
+            let dlBtn = document.getElementById("homeReceiptDownloadBtn");
+            [closeBtn, dlBtn].forEach(b => { if(b) { b.disabled = true; b.style.opacity = "0.4"; b.style.cursor = "not-allowed"; }});
+            setTimeout(() => {
+                [closeBtn, dlBtn].forEach(b => { if(b) { b.disabled = false; b.style.opacity = "1"; b.style.cursor = "pointer"; }});
+            }, 1500);
         }
 
         function downloadReceipt() {
