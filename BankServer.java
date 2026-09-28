@@ -8,9 +8,21 @@ import java.net.InetSocketAddress;
 
 
 public class BankServer {
+    
+    // THE FIX: Global Constants acting as the single source of truth for Aiven MySQL
+    public static final String DB_URL = "jdbc:mysql://mysql-dbd948d-oluyemiayomikun689-4378.j.aivencloud.com:14711/digitalbank?sslMode=REQUIRED&requireSSL=true";
+    public static final String DB_USER = "avnadmin";
+    public static final String DB_PASS = "AVNS_JPZBPVEMHsknCarmRnH";
+    
+    // THE FIX: The centralized connection engine that all 27 handlers will now share
+    public static java.sql.Connection getVaultConnection() throws java.sql.SQLException {
+        return java.sql.DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
+    }
+
     public static void main(String[] args) throws Exception {
         // 1. Setting up the desk
-        HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+        // THE FIX: Binding to 0.0.0.0 to defeat the Localhost Trap inside the Docker container
+        HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", 8080), 0);
         
         // 2. Creating the Authentication Door
         server.createContext("/api/auth", new AuthHandler());
@@ -73,20 +85,32 @@ public class BankServer {
         server.setExecutor(null);
         server.start();
         
-        // THE FIX: The Bulletproof Database Auto-Upgrader. Individual try/catch blocks guarantee NO skipping!
-        try (java.sql.Connection c = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
-            try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN daily_limit REAL DEFAULT 0"); } catch(Exception ignore) {}
-            try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN weekly_limit REAL DEFAULT 0"); } catch(Exception ignore) {}
-            try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN monthly_limit REAL DEFAULT 0"); } catch(Exception ignore) {}
-            try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN limit_unlock_time TEXT"); } catch(Exception ignore) {}
-            try { c.createStatement().execute("ALTER TABLE Savings ADD COLUMN last_swept_date TEXT"); } catch(Exception ignore) {}
-            try { c.createStatement().execute("ALTER TABLE Savings ADD COLUMN exec_timezone TEXT DEFAULT 'UTC'"); } catch(Exception ignore) {}
-            // THE FIX: Stores each user's FCM device token so the cron engine and
-            // transfer handlers can send push notifications directly to their phone.
-            try { c.createStatement().execute("ALTER TABLE Users ADD COLUMN fcm_token TEXT"); } catch(Exception ignore) {}
-        } catch(Exception e) {}
+        // THE FIX: Defensive Initialization for Aiven MySQL with Strict SSL using the new Global Gateway
+        java.sql.Connection initConn = null;
+        try {
+            initConn = getVaultConnection();
+            System.out.println("Secure Aiven MySQL database connection established.");
+            
+            // The Bulletproof Database Auto-Upgrader
+            try { initConn.createStatement().execute("ALTER TABLE Users ADD COLUMN daily_limit REAL DEFAULT 0"); } catch(Exception ignore) {}
+            try { initConn.createStatement().execute("ALTER TABLE Users ADD COLUMN weekly_limit REAL DEFAULT 0"); } catch(Exception ignore) {}
+            try { initConn.createStatement().execute("ALTER TABLE Users ADD COLUMN monthly_limit REAL DEFAULT 0"); } catch(Exception ignore) {}
+            try { initConn.createStatement().execute("ALTER TABLE Users ADD COLUMN limit_unlock_time TEXT"); } catch(Exception ignore) {}
+            try { initConn.createStatement().execute("ALTER TABLE Savings ADD COLUMN last_swept_date TEXT"); } catch(Exception ignore) {}
+            try { initConn.createStatement().execute("ALTER TABLE Savings ADD COLUMN exec_timezone TEXT DEFAULT 'UTC'"); } catch(Exception ignore) {}
+            try { initConn.createStatement().execute("ALTER TABLE Users ADD COLUMN fcm_token TEXT"); } catch(Exception ignore) {}
+            
+            initConn.close();
+        } catch(java.sql.SQLException e) {
+            // THE FIX: The Null-Check Safety Net prevents the fatal crash loop if Aiven is paused
+            if (initConn == null) {
+                System.out.println("WARNING: Aiven MySQL is offline. Server is running but database operations will fail. Error: " + e.getMessage());
+            } else {
+                System.out.println("Database error occurred: " + e.getMessage());
+            }
+        }
         
-        System.out.println("Security Guard is awake. Server listening on port 8080...");
+        System.out.println("Security Guard is awake. Server listening on 0.0.0.0:8080...");
         
         // THE FIX: The Automated Cron Engine — Per-User Timezone Edition
         new Thread(() -> {
@@ -104,11 +128,11 @@ public class BankServer {
                     // the set time rather than potentially a full 60 seconds late.
                     Thread.sleep(30000);
 
-                    java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db");
+                    java.sql.Connection conn = getVaultConnection();
 
                     // 1. Check for expired Time-Locks and erase Transfer Limits
                     try {
-                        conn.createStatement().executeUpdate("UPDATE Users SET transfer_limit = 0, daily_limit = 0, weekly_limit = 0, monthly_limit = 0, limit_unlock_time = NULL WHERE limit_unlock_time IS NOT NULL AND limit_unlock_time <= datetime('now', 'localtime')");
+                        conn.createStatement().executeUpdate("UPDATE Users SET transfer_limit = 0, daily_limit = 0, weekly_limit = 0, monthly_limit = 0, limit_unlock_time = NULL WHERE limit_unlock_time IS NOT NULL AND limit_unlock_time <= NOW()");
                     } catch(Exception ignore) {}
 
                     // 2. Daily Sweep Engine
@@ -294,7 +318,7 @@ public class BankServer {
                 String nokAddress = requestBody.split("\"nokAddress\":\"")[1].split("\"")[0];
                 
                 // THE FIX: Failsafe connection wrapper and explicit Uniqueness Gates
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                     
                     // Explicitly rejecting ONLY duplicate Emails, Phones, Google IDs, and Account Numbers!
                     java.sql.PreparedStatement checkEmail = conn.prepareStatement("SELECT id FROM Users WHERE email = ?");
@@ -452,7 +476,7 @@ public class BankServer {
                 String description = requestBody.split("\"description\":\"")[1].split("\"")[0];
                 boolean saveBeneficiary = requestBody.contains("\"saveBeneficiary\":true");
                 
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                 
                 // THE FIX: Adding the Time-Based limit columns to the SELECT query so the ResultSet can actually find them!
                 // THE FIX: Added full_name to the SELECT so we can include the sender's
@@ -487,17 +511,20 @@ public class BankServer {
                 if (perTransferLimit > 0 && transferAmount > perTransferLimit) throw new Exception("Exceeds Per-Transfer limit of $" + String.format("%.2f", perTransferLimit));
 
                 // Mathematical Time Aggregation queries
-                java.sql.PreparedStatement dailyStmt = conn.prepareStatement("SELECT SUM(amount) AS spent FROM Transactions WHERE sender_account = ? AND timestamp >= datetime('now', '-1 day')");
+                // THE FIX: SQL Dialect Translation -> MySQL uses NOW() - INTERVAL math instead of datetime()
+                java.sql.PreparedStatement dailyStmt = conn.prepareStatement("SELECT SUM(amount) AS spent FROM Transactions WHERE sender_account = ? AND timestamp >= NOW() - INTERVAL 1 DAY");
                 dailyStmt.setString(1, senderAccNum);
                 java.sql.ResultSet rsDaily = dailyStmt.executeQuery();
                 if (dailyLimit > 0 && ((rsDaily.next() ? rsDaily.getDouble("spent") : 0) + transferAmount > dailyLimit)) throw new Exception("Transfer blocked: Daily limit exceeded.");
 
-                java.sql.PreparedStatement weeklyStmt = conn.prepareStatement("SELECT SUM(amount) AS spent FROM Transactions WHERE sender_account = ? AND timestamp >= datetime('now', '-7 days')");
+                // THE FIX: SQL Dialect Translation -> Translating '-7 days' to INTERVAL 7 DAY
+                java.sql.PreparedStatement weeklyStmt = conn.prepareStatement("SELECT SUM(amount) AS spent FROM Transactions WHERE sender_account = ? AND timestamp >= NOW() - INTERVAL 7 DAY");
                 weeklyStmt.setString(1, senderAccNum);
                 java.sql.ResultSet rsWeekly = weeklyStmt.executeQuery();
                 if (weeklyLimit > 0 && ((rsWeekly.next() ? rsWeekly.getDouble("spent") : 0) + transferAmount > weeklyLimit)) throw new Exception("Transfer blocked: Weekly limit exceeded.");
 
-                java.sql.PreparedStatement monthlyStmt = conn.prepareStatement("SELECT SUM(amount) AS spent FROM Transactions WHERE sender_account = ? AND timestamp >= datetime('now', '-1 month')");
+                // THE FIX: SQL Dialect Translation -> Translating '-1 month' to INTERVAL 1 MONTH
+                java.sql.PreparedStatement monthlyStmt = conn.prepareStatement("SELECT SUM(amount) AS spent FROM Transactions WHERE sender_account = ? AND timestamp >= NOW() - INTERVAL 1 MONTH");
                 monthlyStmt.setString(1, senderAccNum);
                 java.sql.ResultSet rsMonthly = monthlyStmt.executeQuery();
                 if (monthlyLimit > 0 && ((rsMonthly.next() ? rsMonthly.getDouble("spent") : 0) + transferAmount > monthlyLimit)) throw new Exception("Transfer blocked: Monthly limit exceeded.");
@@ -964,7 +991,7 @@ public class BankServer {
             String requestBody = new String(exchange.getRequestBody().readAllBytes());
             try {
                 String account = requestBody.split("\"account\":\"")[1].split("\"")[0];
-                java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db");
+                java.sql.Connection conn = getVaultConnection();
                 
                 // THE FIX: Pulling the amount_paid and timestamp to power the State Derivation math on the frontend
                 String sql = "SELECT total_owed, amount_paid, next_due_date, repayment_type, timestamp FROM Loans WHERE account_number = ? AND status = 'ACTIVE'";
@@ -1036,7 +1063,7 @@ public class BankServer {
                 
                 String dueDate = requestBody.split("\"dueDate\":\"")[1].split("\"")[0];
 
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                 
                 // Verify PIN
                 String authSql = "SELECT id FROM Users WHERE google_id = ? AND pin = ?";
@@ -1106,7 +1133,7 @@ public class BankServer {
                 String amountStr = requestBody.split("\"amount\":")[1].split(",")[0].replaceAll("[^\\d.]", "");
                 double amount = Double.parseDouble(amountStr);
 
-                java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db");
+                java.sql.Connection conn = getVaultConnection();
                 
                 // Verify PIN & Balance
                 String authSql = "SELECT balance FROM Users WHERE google_id = ? AND pin = ?";
@@ -1265,7 +1292,7 @@ public class BankServer {
                 String amountStr = requestBody.split("\"amount\":")[1].split(",")[0].replaceAll("[\"}]", "").trim();
                 double depositAmount = Double.parseDouble(amountStr);
 
-                java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db");
+                java.sql.Connection conn = getVaultConnection();
 
                 // 1. Verify the PIN is correct
                 String authSql = "SELECT account_number FROM Users WHERE google_id = ? AND pin = ?";
@@ -1329,11 +1356,12 @@ public class BankServer {
                 String requestBody = new String(exchange.getRequestBody().readAllBytes());
                 String account = requestBody.split("\"account\":\"")[1].split("\"")[0];
                 
-                java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db");
+                java.sql.Connection conn = getVaultConnection();
                 
                 // THE FIX: Pulling the target end date, the exact seconds alive for Interest Calculation, and the 12-hour lock
-                String sql = "SELECT *, CAST(strftime('%s', withdrawal_lock_until) - strftime('%s', 'now') AS INTEGER) AS time_left, " +
-                             "CAST(strftime('%s', 'now') - strftime('%s', timestamp) AS INTEGER) AS seconds_alive " +
+                // THE FIX: SQL Dialect Translation -> MySQL requires UNIX_TIMESTAMP() and AS SIGNED
+                String sql = "SELECT *, CAST(UNIX_TIMESTAMP(withdrawal_lock_until) - UNIX_TIMESTAMP(NOW()) AS SIGNED) AS time_left, " +
+                             "CAST(UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(timestamp) AS SIGNED) AS seconds_alive " +
                              "FROM Savings WHERE account_number = ? ORDER BY timestamp DESC";
                 java.sql.PreparedStatement stmt = conn.prepareStatement(sql);
                 stmt.setString(1, account);
@@ -1408,7 +1436,7 @@ public class BankServer {
                 String timezone = "UTC";
                 try { timezone = requestBody.split("\"timezone\":\"")[1].split("\"")[0]; } catch(Exception ignore) {}
 
-                java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db");
+                java.sql.Connection conn = getVaultConnection();
                 
                 // Verify PIN & Balance
                 String authSql = "SELECT balance FROM Users WHERE google_id = ? AND pin = ?";
@@ -1488,7 +1516,7 @@ public class BankServer {
                 double amount = Double.parseDouble(requestBody.split("\"amount\":")[1].split(",")[0].replaceAll("[^\\d.]", ""));
 
                 // THE FIX: Try-With-Resources automatically closes the database connection even if the server crashes!
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                     String authSql = "SELECT account_number, balance FROM Users WHERE google_id = ? AND pin = ?";
                     java.sql.PreparedStatement authStmt = conn.prepareStatement(authSql);
                     authStmt.setString(1, googleId); authStmt.setString(2, pin);
@@ -1563,7 +1591,7 @@ public class BankServer {
                 String pin = requestBody.split("\"pin\":\"")[1].split("\"")[0];
                 double amount = Double.parseDouble(requestBody.split("\"amount\":")[1].split(",")[0].replaceAll("[^\\d.]", ""));
 
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                     String authSql = "SELECT account_number FROM Users WHERE google_id = ? AND pin = ?";
                     java.sql.PreparedStatement authStmt = conn.prepareStatement(authSql);
                     authStmt.setString(1, googleId); authStmt.setString(2, pin);
@@ -1573,9 +1601,10 @@ public class BankServer {
                     String account = rsAuth.getString("account_number");
                     
                     // THE FIX: Added 'timestamp' so Java can mathematically mint the APY Interest into the final withdrawal!
+                    // THE FIX: SQL Dialect Translation -> MySQL requires UNIX_TIMESTAMP() and AS SIGNED
                     String planSql = "SELECT plan_name, discipline, category, current_balance, target_amount, end_date, timestamp, " +
-                                     "CAST(strftime('%s', withdrawal_lock_until) - strftime('%s', 'now') AS INTEGER) AS time_left, " +
-                                     "CAST(strftime('%s', 'now') - strftime('%s', timestamp) AS INTEGER) AS seconds_alive, " +
+                                     "CAST(UNIX_TIMESTAMP(withdrawal_lock_until) - UNIX_TIMESTAMP(NOW()) AS SIGNED) AS time_left, " +
+                                     "CAST(UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(timestamp) AS SIGNED) AS seconds_alive, " +
                                      "withdrawal_lock_until " +
                                      "FROM Savings WHERE id = ? AND account_number = ?";
                     java.sql.PreparedStatement planStmt = conn.prepareStatement(planSql);
@@ -1618,7 +1647,8 @@ public class BankServer {
                             else throw new Exception("STRICT PROTOCOL: Fixed locks cannot be broken manually.");
                         } else if (discipline.equals("LENIENT")) {
                             if (!hasLock) {
-                                String trigger = "UPDATE Savings SET withdrawal_lock_until = datetime('now', '+12 hours') WHERE id = ?";
+                                // THE FIX: SQL Dialect Translation -> MySQL uses NOW() + INTERVAL 12 HOUR
+                                String trigger = "UPDATE Savings SET withdrawal_lock_until = NOW() + INTERVAL 12 HOUR WHERE id = ?";
                                 java.sql.PreparedStatement trigStmt = conn.prepareStatement(trigger);
                                 trigStmt.setInt(1, planId); trigStmt.executeUpdate();
                                 throw new Exception("LENIENT PROTOCOL: 12-Hour algorithmic cooling period initiated. Please return later to claim funds.");
@@ -1682,7 +1712,7 @@ public class BankServer {
                 String requestBody = new String(exchange.getRequestBody().readAllBytes());
                 int planId = Integer.parseInt(requestBody.split("\"planId\":")[1].split(",")[0].replaceAll("[^\\d]", ""));
                 
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                     String sql = "UPDATE Savings SET withdrawal_lock_until = NULL WHERE id = ?";
                     java.sql.PreparedStatement stmt = conn.prepareStatement(sql);
                     stmt.setInt(1, planId);
@@ -1709,7 +1739,7 @@ public class BankServer {
                 String requestBody = new String(exchange.getRequestBody().readAllBytes());
                 int planId = Integer.parseInt(requestBody.split("\"planId\":")[1].split(",")[0].replaceAll("[^\\d]", ""));
                 
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                     // Failsafe: The SQL specifically demands the balance must be 0 to execute the deletion
                     String sql = "DELETE FROM Savings WHERE id = ? AND current_balance <= 0";
                     java.sql.PreparedStatement stmt = conn.prepareStatement(sql);
@@ -1737,7 +1767,7 @@ public class BankServer {
                 String requestBody = new String(exchange.getRequestBody().readAllBytes());
                 String googleId = requestBody.split("\"googleId\":\"")[1].split("\"")[0];
                 
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                     String sql = "SELECT * FROM Users WHERE google_id = ?";
                     java.sql.PreparedStatement stmt = conn.prepareStatement(sql);
                     stmt.setString(1, googleId);
@@ -1795,7 +1825,7 @@ public class BankServer {
                 String nokAddress = requestBody.split("\"nokAddress\":\"")[1].split("\"")[0];
                 String pin = requestBody.split("\"pin\":\"")[1].split("\"")[0];
                 
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                     String authSql = "SELECT id FROM Users WHERE google_id = ? AND pin = ?";
                     java.sql.PreparedStatement authStmt = conn.prepareStatement(authSql);
                     authStmt.setString(1, googleId); authStmt.setString(2, pin);
@@ -1828,7 +1858,7 @@ public class BankServer {
                 String oldPin = requestBody.split("\"oldPin\":\"")[1].split("\"")[0];
                 String newPin = requestBody.split("\"newPin\":\"")[1].split("\"")[0];
                 
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                     String authSql = "SELECT id FROM Users WHERE google_id = ? AND pin = ?";
                     java.sql.PreparedStatement authStmt = conn.prepareStatement(authSql);
                     authStmt.setString(1, googleId); authStmt.setString(2, oldPin);
@@ -1867,7 +1897,7 @@ public class BankServer {
                 if(limitType.equals("weekly")) targetColumn = "weekly_limit";
                 if(limitType.equals("monthly")) targetColumn = "monthly_limit";
 
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                     String authSql = "SELECT id FROM Users WHERE google_id = ? AND pin = ?";
                     java.sql.PreparedStatement authStmt = conn.prepareStatement(authSql);
                     authStmt.setString(1, googleId); authStmt.setString(2, pin);
@@ -1875,7 +1905,8 @@ public class BankServer {
 
                     if (limitType.equals("delete")) {
                         // THE FIX: Initiates the 24-Hour Deletion Time-Lock!
-                        String lockSql = "UPDATE Users SET limit_unlock_time = datetime('now', '+24 hours', 'localtime') WHERE google_id = ?";
+                        // THE FIX: SQL Dialect Translation -> MySQL uses NOW() + INTERVAL 24 HOUR
+                        String lockSql = "UPDATE Users SET limit_unlock_time = NOW() + INTERVAL 24 HOUR WHERE google_id = ?";
                         conn.prepareStatement(lockSql).executeUpdate();
                     } else {
                         String sql = "UPDATE Users SET " + targetColumn + " = ?, limit_unlock_time = NULL WHERE google_id = ?";
@@ -1905,7 +1936,7 @@ public class BankServer {
                 String pin = requestBody.split("\"pin\":\"")[1].split("\"")[0];
                 String newAcc = requestBody.split("\"newAccount\":\"")[1].split("\"")[0];
                 
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                     String authSql = "SELECT account_number FROM Users WHERE google_id = ? AND pin = ?";
                     java.sql.PreparedStatement authStmt = conn.prepareStatement(authSql);
                     authStmt.setString(1, googleId); authStmt.setString(2, pin);
@@ -1962,7 +1993,7 @@ public class BankServer {
                 String timezone = "UTC";
                 try { timezone = requestBody.split("\"timezone\":\"")[1].split("\"")[0]; } catch(Exception ignore) {}
 
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                     // THE FIX: Also updates exec_timezone alongside exec_time so the
                     // cron always uses the correct timezone after an edit.
                     String sql = "UPDATE Savings SET daily_amount = ?, exec_time = ?, exec_timezone = ?, last_swept_date = NULL WHERE id = ?";
@@ -2025,7 +2056,7 @@ public class BankServer {
                 String googleId = body.split("\"googleId\":\"")[1].split("\"")[0];
                 String fcmToken = body.split("\"fcmToken\":\"")[1].split("\"")[0];
 
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                     java.sql.PreparedStatement stmt = conn.prepareStatement("UPDATE Users SET fcm_token = ? WHERE google_id = ?");
                     stmt.setString(1, fcmToken);
                     stmt.setString(2, googleId);
@@ -2161,7 +2192,7 @@ public class BankServer {
                 String googleId = requestBody.split("\"googleId\":\"")[1].split("\"")[0];
                 String pin = requestBody.split("\"pin\":\"")[1].split("\"")[0];
 
-                try (java.sql.Connection conn = java.sql.DriverManager.getConnection("jdbc:sqlite:bank.db")) {
+                try (java.sql.Connection conn = getVaultConnection()) {
                     String sql = "SELECT id FROM Users WHERE google_id = ? AND pin = ?";
                     java.sql.PreparedStatement stmt = conn.prepareStatement(sql);
                     stmt.setString(1, googleId);
