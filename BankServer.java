@@ -244,8 +244,10 @@ public class BankServer {
             String requestBody = new String(is.readAllBytes());
             
             try {
-                // 2. Extract the token string from the JSON package
-                String token = requestBody.split("\"token\":\"")[1].split("\"")[0];
+                // THE FIX: Upgrading to Regex [Regular Expression: A sequence of characters that specifies a search pattern in text] to safely extract the token, ignoring unpredictable whitespace.
+                java.util.regex.Matcher tokenMatcher = java.util.regex.Pattern.compile("\"token\"\\s*:\\s*\"([^\"]+)\"").matcher(requestBody);
+                if (!tokenMatcher.find()) throw new Exception("Missing 'token' in request payload.");
+                String token = tokenMatcher.group(1).trim();
                 
                 // 3. Crack open the JWT badge (Header.Payload.Signature)
                 String[] tokenParts = token.split("\\.");
@@ -253,8 +255,11 @@ public class BankServer {
                 // 4. Decode the middle part (The Payload containing user data)
                 String payload = new String(java.util.Base64.getUrlDecoder().decode(tokenParts[1]));
                 
-                // 5. Extract the unique Google ID (Google calls this the "sub")
-                String googleId = payload.split("\"sub\":\"")[1].split("\"")[0];
+                // THE FIX: Eradicating the naive string split and deploying Regex to bulletproof the Google ID extraction.
+                java.util.regex.Matcher subMatcher = java.util.regex.Pattern.compile("\"sub\"\\s*:\\s*\"([^\"]+)\"").matcher(payload);
+                if (!subMatcher.find()) throw new Exception("JWT payload missing 'sub' claim. Raw payload=[" + payload + "]");
+                String googleId = subMatcher.group(1).trim();
+                if (googleId.isEmpty()) throw new Exception("JWT 'sub' claim is empty after trim.");
                 
                 // THE FIX: Eradicated the legacy SQLite string and wired the Authentication Door directly into the centralized Aiven MySQL engine.
                 java.sql.Connection conn = getVaultConnection();
@@ -276,11 +281,30 @@ public class BankServer {
                 os.close();
                 
             } catch (Exception e) {
-                // If the badge is unreadable
-                String error = "Error decoding badge.";
-                exchange.sendResponseHeaders(400, error.length());
+                // THE FIX: Eradicating Broad Exception Masking by printing the exact mathematical stack trace to the Render console.
+                System.err.println("=================================================");
+                System.err.println("[AuthHandler] FATAL: " + e.getClass().getName() + " : " + e.getMessage());
+                e.printStackTrace(System.err);
+
+                Throwable cause = e.getCause();
+                int depth = 1;
+                while (cause != null && depth < 6) {
+                    System.err.println("[AuthHandler]   Caused by [" + depth + "]: " + cause.getClass().getName() + " : " + cause.getMessage());
+                    cause.printStackTrace(System.err);
+                    cause = cause.getCause();
+                    depth++;
+                }
+                System.err.println("=================================================");
+
+                // THE FIX: Sending a perfectly formatted JSON error back so the Javascript fetch().json() doesn't freeze waiting for an object.
+                String safeMsg = (e.getMessage() == null) ? "null" : e.getMessage().replace("\"", "'").replace("\n", " ");
+                String errorJson = "{\"error\":\"Error decoding badge\", \"type\":\"" + e.getClass().getSimpleName() + "\", \"detail\":\"" + safeMsg + "\"}";
+                
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
+                byte[] responseBytes = errorJson.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(400, responseBytes.length);
                 OutputStream os = exchange.getResponseBody();
-                os.write(error.getBytes());
+                os.write(responseBytes);
                 os.close();
             }
         }
