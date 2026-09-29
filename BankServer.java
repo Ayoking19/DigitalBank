@@ -185,7 +185,7 @@ public class BankServer {
                                 sweptKeys.add(sweepKey);
                                 try { conn.prepareStatement("UPDATE Savings SET last_swept_date = '" + today + "' WHERE id = " + planId).executeUpdate(); } catch(Exception ignore) {}
 
-                                java.sql.PreparedStatement txStmt = conn.prepareStatement("INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, ?, ?, 'Automated Daily Sweep', datetime('now'))");
+                                java.sql.PreparedStatement txStmt = conn.prepareStatement("INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, ?, ?, 'Automated Daily Sweep', NOW())");
                                 txStmt.setString(1, acc);
                                 txStmt.setString(2, name + " (Savings)");
                                 txStmt.setDouble(3, amt);
@@ -395,7 +395,7 @@ public class BankServer {
                     pstmt.setString(14, nokAddress);
                     pstmt.executeUpdate();
                     
-                    String genesisSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, timestamp) VALUES ('SYSTEM', ?, ?, datetime('now'))";
+                    String genesisSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, timestamp) VALUES ('SYSTEM', ?, ?, NOW())";
                     java.sql.PreparedStatement genesisStmt = conn.prepareStatement(genesisSql);
                     genesisStmt.setString(1, accountNum);
                     genesisStmt.setDouble(2, initialDeposit);
@@ -616,7 +616,7 @@ public class BankServer {
                 addStmt.executeUpdate();
                 
                 // THE FIX: Upgrading the transaction record to physically save the Description
-                String recordSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, ?, ?, ?, datetime('now'))";
+                String recordSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, ?, ?, ?, NOW())";
                 // THE FIX: RETURN_GENERATED_KEYS tells JDBC to capture the new row's auto-incremented
                 // ID the instant this INSERT executes, before anything else can touch the connection.
                 java.sql.PreparedStatement recordStmt = conn.prepareStatement(recordSql, java.sql.Statement.RETURN_GENERATED_KEYS);
@@ -1126,7 +1126,7 @@ public class BankServer {
                 loanStmt.executeUpdate();
 
                 // 3. Record the Transaction
-                String txSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES ('SYSTEM', ?, ?, 'Institutional Credit Disbursement', datetime('now'))";
+                String txSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES ('SYSTEM', ?, ?, 'Institutional Credit Disbursement', NOW())";
                 java.sql.PreparedStatement txStmt = conn.prepareStatement(txSql);
                 txStmt.setString(1, account); txStmt.setDouble(2, principal);
                 txStmt.executeUpdate();
@@ -1252,7 +1252,7 @@ public class BankServer {
                 closeStmt.setString(1, account); closeStmt.executeUpdate();
 
                 // 4. Record Transaction
-                String txSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, 'SYSTEM', ?, 'Credit Facility Repayment', datetime('now'))";
+                String txSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, 'SYSTEM', ?, 'Credit Facility Repayment', NOW())";
                 java.sql.PreparedStatement txStmt = conn.prepareStatement(txSql);
                 txStmt.setString(1, account); txStmt.setDouble(2, amount);
                 txStmt.executeUpdate();
@@ -1359,7 +1359,7 @@ public class BankServer {
 
                 // 3. Record the Transaction in the Ledger
                 // THE FIX: Professional institutional naming convention
-                String txSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES ('Approved Funding Source', ?, ?, 'Vault Deposit', datetime('now'))";
+                String txSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES ('Approved Funding Source', ?, ?, 'Vault Deposit', NOW())";
                 java.sql.PreparedStatement txStmt = conn.prepareStatement(txSql);
                 txStmt.setString(1, accountNum);
                 txStmt.setDouble(2, depositAmount);
@@ -1506,7 +1506,7 @@ public class BankServer {
                     deductStmt.executeUpdate();
                     
                     // THE FIX: Custom Ledger Routing - Assigning the Portfolio Name as the Receiver
-                    String txSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, ?, ?, ?, datetime('now'))";
+                    String txSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, ?, ?, ?, NOW())";
                     java.sql.PreparedStatement txStmt = conn.prepareStatement(txSql);
                     txStmt.setString(1, account); 
                     txStmt.setString(2, name + " (Savings)"); 
@@ -1599,7 +1599,7 @@ public class BankServer {
                     saveStmt.executeUpdate();
 
                     // THE FIX: Custom Ledger Routing - Assigning the Portfolio Name as the Receiver
-                    String txSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, ?, ?, ?, datetime('now'))";
+                    String txSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, ?, ?, ?, NOW())";
                     java.sql.PreparedStatement txStmt = conn.prepareStatement(txSql);
                     txStmt.setString(1, account); 
                     txStmt.setString(2, planName + " (Savings)"); 
@@ -1723,7 +1723,7 @@ public class BankServer {
                     addStmt.executeUpdate();
 
                     // THE FIX: Custom Ledger Routing - Assigning the Portfolio Name as the Sender
-                    String txSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, ?, ?, ?, datetime('now'))";
+                    String txSql = "INSERT INTO Transactions (sender_account, receiver_account, amount, description, timestamp) VALUES (?, ?, ?, ?, NOW())";
                     java.sql.PreparedStatement txStmt = conn.prepareStatement(txSql);
                     txStmt.setString(1, planName + " (Savings)"); 
                     txStmt.setString(2, account); 
