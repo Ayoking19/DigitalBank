@@ -229,6 +229,10 @@ public class BankServer {
         public void handle(HttpExchange exchange) throws IOException {
             
             // Opening the window for CORS
+            // THE FIX: Injecting the 3 required cryptographic headers to authorize the browser before intercepting the OPTIONS preflight check.
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
@@ -289,6 +293,11 @@ public class BankServer {
         public void handle(HttpExchange exchange) throws IOException {
             
             // Opening the window for CORS
+            // THE FIX: Authorizing cross-origin POST requests so the frontend can securely transmit the 14-piece KYC payload.
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+            
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
                 return;
@@ -391,7 +400,10 @@ public class BankServer {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             
-            
+            // THE FIX: Injecting the 3 required cryptographic headers to authorize the browser to read the vault ledger.
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
@@ -683,7 +695,10 @@ public class BankServer {
         public void handle(HttpExchange exchange) throws IOException {
             
             // Opening the window for CORS [Cross-Origin Resource Sharing: A mandatory security protocol that explicitly grants a web browser permission to load data from a backend server operating on a different port]
-            
+            // THE FIX: Injecting the required CORS headers so the browser does not destroy the history data payload.
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
                 exchange.sendResponseHeaders(204, -1);
@@ -1349,6 +1364,11 @@ public class BankServer {
     static class GetSavingsHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            
+            // THE FIX: Expanding the condensed line to inject the required CORS headers for the savings data pipeline.
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
             
             if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) { exchange.sendResponseHeaders(204, -1); return; }
 

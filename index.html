@@ -231,7 +231,7 @@
         // Standard Google Auth Login
         function handleGoogleLogin(response) {
             const visitorBadge = response.credential;
-            fetch("https://digitalbank.duckdns.org/api/auth", {
+            fetch("https://digitalbank-api-oluyemi.onrender.com/api/auth", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ token: visitorBadge })
@@ -310,7 +310,7 @@
             };
 
             // We will point this to our updated Java endpoint in the next step
-            fetch("https://digitalbank.duckdns.org/api/register", {
+            fetch("https://digitalbank-api-oluyemi.onrender.com/api/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(accountData)
@@ -354,7 +354,7 @@
             let savedId = localStorage.getItem("digitalBankId");
 
             // Ping the new Java endpoint we are about to build
-            fetch("https://digitalbank.duckdns.org/api/verify-pin", {
+            fetch("https://digitalbank-api-oluyemi.onrender.com/api/verify-pin", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ googleId: savedId, pin: pin })

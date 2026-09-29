@@ -235,7 +235,7 @@
             if (!userId) window.location.assign("./index.html");
             
             // 1. Initial Authentication & Account Retrieval
-            fetch("https://digitalbank.duckdns.org/api/user", {
+            fetch("https://digitalbank-api-oluyemi.onrender.com/api/user", {
                 method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ googleId: userId })
             }).then(res => res.json()).then(data => {
                 userAcc = data.accountNumber;
@@ -245,7 +245,7 @@
 
         // THE FIX: Hydrating the active portfolios onto the dashboard
         function loadSavingsPortfolios(acc) {
-            fetch("https://digitalbank.duckdns.org/api/get-savings", {
+            fetch("https://digitalbank-api-oluyemi.onrender.com/api/get-savings", {
                 method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ account: acc })
             }).then(res => res.json()).then(plans => {
                 let ledger = document.getElementById("activeSavingsLedger");
@@ -606,7 +606,7 @@
             payload.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
             // Transmitting the legal contract to the Java Vault
-            fetch("https://digitalbank.duckdns.org/api/create-savings", {
+            fetch("https://digitalbank-api-oluyemi.onrender.com/api/create-savings", {
                 method: "POST", headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(payload)
             }).then(res => {
@@ -659,7 +659,7 @@
             if(!amt || amt <= 0) return errBox.innerText = "Please enter a valid amount.", errBox.style.display="block";
             if(!time) return errBox.innerText = "Please select a time.", errBox.style.display="block";
 
-            fetch("https://digitalbank.duckdns.org/api/edit-savings", {
+            fetch("https://digitalbank-api-oluyemi.onrender.com/api/edit-savings", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 // THE FIX: Timezone included in the edit payload so if the user
                 // edits their sweep from a different location or device, the stored
@@ -680,7 +680,7 @@
             if(!amt || amt <= 0) return errBox.innerText = "Please enter a valid amount.", errBox.style.display="block";
             if(!/^\d{4}$/.test(pin)) return errBox.innerText = "Please enter your 4-digit PIN.", errBox.style.display="block";
 
-            fetch("https://digitalbank.duckdns.org/api/fund-savings", {
+            fetch("https://digitalbank-api-oluyemi.onrender.com/api/fund-savings", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({ googleId: userId, planId: activeManageId, amount: amt, pin: pin })
             }).then(res => {
@@ -701,7 +701,7 @@
             if(!amt || amt <= 0) return errBox.innerText = "Please enter a valid amount.", errBox.style.display="block";
             if(!/^\d{4}$/.test(pin)) return errBox.innerText = "Please enter your 4-digit PIN.", errBox.style.display="block";
 
-            fetch("https://digitalbank.duckdns.org/api/withdraw-savings", {
+            fetch("https://digitalbank-api-oluyemi.onrender.com/api/withdraw-savings", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({ googleId: userId, planId: activeManageId, amount: amt, pin: pin })
             }).then(res => {
@@ -748,7 +748,7 @@
             // THE FIX: Instantly hide the modal to prove to the user the button was clicked
             document.getElementById('cancelWithdrawalModal').style.display = 'none';
             
-            fetch("https://digitalbank.duckdns.org/api/cancel-withdrawal", {
+            fetch("https://digitalbank-api-oluyemi.onrender.com/api/cancel-withdrawal", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({ planId: pendingCancelId })
             }).then(() => window.location.reload());
@@ -756,7 +756,7 @@
 
         // THE FIX: The execution engine for the Zero-Balance Deletion protocol
         function deletePortfolio(id) {
-            fetch("https://digitalbank.duckdns.org/api/delete-savings", {
+            fetch("https://digitalbank-api-oluyemi.onrender.com/api/delete-savings", {
                 method: "POST", headers: {"Content-Type":"application/json"},
                 body: JSON.stringify({ planId: id })
             }).then(() => window.location.reload());
