@@ -256,9 +256,8 @@ public class BankServer {
                 // 5. Extract the unique Google ID (Google calls this the "sub")
                 String googleId = payload.split("\"sub\":\"")[1].split("\"")[0];
                 
-                // THE FIX: Connecting to the vault to see if this user already exists
-                String url = "jdbc:sqlite:bank.db";
-                java.sql.Connection conn = java.sql.DriverManager.getConnection(url);
+                // THE FIX: Eradicated the legacy SQLite string and wired the Authentication Door directly into the centralized Aiven MySQL engine.
+                java.sql.Connection conn = getVaultConnection();
                 String checkSql = "SELECT account_number FROM Users WHERE google_id = ?";
                 java.sql.PreparedStatement checkStmt = conn.prepareStatement(checkSql);
                 checkStmt.setString(1, googleId);
@@ -417,9 +416,8 @@ public class BankServer {
                 // Extracting the Google ID from the digital backpack payload
                 String googleId = requestBody.split("\"googleId\":\"")[1].split("\"")[0];
                 
-                // Connecting to the Vault
-                String url = "jdbc:sqlite:bank.db";
-                java.sql.Connection conn = java.sql.DriverManager.getConnection(url);
+                // THE FIX: Eradicated the legacy SQLite string and wired the Dashboard Door directly into the centralized Aiven MySQL engine.
+                java.sql.Connection conn = getVaultConnection();
                 
                 // THE FIX: Expanding the query to pull the user's institutional Credit Score
                 String sql = "SELECT account_number, balance, credit_score FROM Users WHERE google_id = ?";
@@ -712,8 +710,8 @@ public class BankServer {
                 // Extracting the Google ID from the incoming frontend package
                 String googleId = requestBody.split("\"googleId\":\"")[1].split("\"")[0];
 
-                String url = "jdbc:sqlite:bank.db";
-                java.sql.Connection conn = java.sql.DriverManager.getConnection(url);
+                // THE FIX: Eradicated the legacy SQLite string and wired the Ledger Door directly into the centralized Aiven MySQL engine.
+                java.sql.Connection conn = getVaultConnection();
 
                 // Step 1: Find the user's actual account number using their Google ID
                 String userSql = "SELECT account_number FROM Users WHERE google_id = ?";
@@ -811,8 +809,8 @@ public class BankServer {
                 // Extracting the Google ID from the payload
                 String googleId = requestBody.split("\"googleId\":\"")[1].split("\"")[0];
 
-                String url = "jdbc:sqlite:bank.db";
-                java.sql.Connection conn = java.sql.DriverManager.getConnection(url);
+                // THE FIX: Eradicated the legacy SQLite string and wired the Beneficiary Door directly into the centralized Aiven MySQL engine.
+                java.sql.Connection conn = getVaultConnection();
 
                 // Step 1: Find the user's actual account number to establish ownership
                 String userSql = "SELECT account_number FROM Users WHERE google_id = ?";
@@ -889,8 +887,8 @@ public class BankServer {
                 // Slicing out the 10-digit number sent from the search bar
                 String lookupAcc = requestBody.split("\"account\":\"")[1].split("\"")[0];
                 
-                String url = "jdbc:sqlite:bank.db";
-                java.sql.Connection conn = java.sql.DriverManager.getConnection(url);
+                // THE FIX: Eradicated the legacy SQLite string and wired the Account Lookup Door directly into the centralized Aiven MySQL engine.
+                java.sql.Connection conn = getVaultConnection();
 
                 // Scanning the Users table for a direct match
                 String sql = "SELECT full_name FROM Users WHERE account_number = ?";
@@ -945,8 +943,8 @@ public class BankServer {
                 String beneName = requestBody.split("\"beneName\":\"")[1].split("\"")[0];
                 String action = requestBody.split("\"action\":\"")[1].split("\"")[0]; // Reads "add" or "remove"
 
-                String url = "jdbc:sqlite:bank.db";
-                java.sql.Connection conn = java.sql.DriverManager.getConnection(url);
+                // THE FIX: Eradicated the legacy SQLite string and wired the Manage Beneficiary Door directly into the centralized Aiven MySQL engine.
+                java.sql.Connection conn = getVaultConnection();
 
                 String userSql = "SELECT account_number FROM Users WHERE google_id = ?";
                 java.sql.PreparedStatement userStmt = conn.prepareStatement(userSql);
